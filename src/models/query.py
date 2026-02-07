@@ -16,6 +16,7 @@ class QueryType(str, Enum):
     PORTFOLIO_LIST = "portfolio_list"  # List companies with filters
     COMPANY_DETAIL = "company_detail"  # Details about specific company
     TIME_SERIES = "time_series"  # Performance over time
+    PORTFOLIO_AGGREGATION = "portfolio_aggregation"  # Aggregate calculations (average, total, median)
     GENERAL_CHAT = "general_chat"  # General questions, elaboration requests
     UNKNOWN = "unknown"  # Couldn't understand the query
 
@@ -30,6 +31,8 @@ class QueryIntent(BaseModel):
     limit: Optional[int] = Field(None, description="Maximum number of results")
     company_name: Optional[str] = Field(None, description="Specific company name")
     time_period: Optional[str] = Field(None, description="Time period (latest, Q1 2024, etc.)")
+    aggregation_type: Optional[str] = Field(None, description="Type of aggregation (average, median, sum, min, max, count)")
+    aggregation_field: Optional[str] = Field(None, description="Field to aggregate (investment, return, valuation, etc.)")
     show_all_details: bool = Field(default=False, description="Whether to show all columns or just key ones")
     ascending: bool = Field(default=False, description="Sort ascending (True for worst/lowest/bottom, False for top/best/highest)")
     confidence: float = Field(default=1.0, description="Confidence in intent parsing")

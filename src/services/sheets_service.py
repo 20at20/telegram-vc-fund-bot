@@ -97,14 +97,36 @@ class SheetsService:
     def _clean_empty_rows(self, df: pd.DataFrame) -> pd.DataFrame:
         """
         Remove rows where all values are empty or NaN.
+        IMPORTANT: Stops at first blank cell in first column (Time/Period) to avoid
+        reading summary tables that come after main data.
 
         Args:
             df: DataFrame to clean
 
         Returns:
-            DataFrame with empty rows removed
+            DataFrame with empty rows removed, stopping at first blank in first column
         """
-        # Drop rows where all columns are empty/NaN
+        if df.empty:
+            return df
+
+        # First, find where the first column (Time/Period) becomes blank
+        # This marks the boundary between main data and summary tables
+        first_col = df.columns[0]
+
+        # Find the first row where the first column is empty/blank
+        first_blank_idx = None
+        for idx, value in df[first_col].items():
+            # Check if value is NaN, None, empty string, or whitespace-only
+            if pd.isna(value) or str(value).strip() == '':
+                first_blank_idx = idx
+                break
+
+        # If we found a blank, cut off everything from that point
+        if first_blank_idx is not None:
+            df = df.iloc[:first_blank_idx].copy()
+            logger.debug(f"Stopped reading at row {first_blank_idx} (first blank in '{first_col}' column)")
+
+        # Now remove any completely empty rows within the remaining data
         df_cleaned = df.dropna(how='all')
 
         # Also remove rows where all values are empty strings

@@ -37,6 +37,220 @@ class DataProcessor:
 
         return df
 
+    def process_portfolio_aggregation(
+        self, df: pd.DataFrame, aggregation_type: str, aggregation_field: str, filters: Dict[str, Any] = None
+    ) -> Dict[str, Any]:
+        """
+        Calculate aggregations across portfolio companies.
+
+        Args:
+            df: Portfolio DataFrame
+            aggregation_type: Type of aggregation (average, median, sum, min, max, count)
+            aggregation_field: Field to aggregate (investment, return, valuation, etc.)
+            filters: Optional filters to apply before aggregation
+
+        Returns:
+            Dictionary with aggregation result
+        """
+        try:
+            if df.empty:
+                return {"error": "No portfolio data available"}
+
+            # Filter to RV portfolio only
+            df = self._filter_rv_portfolio(df)
+
+            if df.empty:
+                return {"error": "No RV portfolio companies found"}
+
+            # Apply additional filters if provided
+            if filters:
+                for key, value in filters.items():
+                    filter_col = self._find_column(df, key)
+                    if filter_col:
+                        df = df[df[filter_col].astype(str).str.contains(str(value), case=False, na=False)]
+
+            # Find the aggregation column
+            agg_col = self._find_column(df, aggregation_field)
+
+            if not agg_col:
+                return {
+                    "error": f"Field '{aggregation_field}' not found. Available fields: {', '.join(df.columns[:10])}"
+                }
+
+            # Clean and convert to numeric
+            df_clean = df.copy()
+            df_clean[agg_col] = (
+                df_clean[agg_col]
+                .astype(str)
+                .str.replace('$', '', regex=False)
+                .str.replace('K', '', regex=False)
+                .str.replace('M', '', regex=False)
+                .str.replace(',', '', regex=False)
+                .str.replace('x', '', regex=False)  # For returns like "7.1x"
+                .str.strip()
+            )
+
+            # Convert to numeric
+            df_clean[agg_col] = pd.to_numeric(df_clean[agg_col], errors='coerce')
+
+            # Drop NaN values
+            df_clean = df_clean.dropna(subset=[agg_col])
+
+            if df_clean.empty:
+                return {"error": f"No valid numeric data found for '{aggregation_field}'"}
+
+            # Perform aggregation
+            aggregation_type_lower = aggregation_type.lower()
+
+            if aggregation_type_lower in ['average', 'avg', 'mean']:
+                result_value = df_clean[agg_col].mean()
+                agg_name = "Average"
+            elif aggregation_type_lower == 'median':
+                result_value = df_clean[agg_col].median()
+                agg_name = "Median"
+            elif aggregation_type_lower in ['sum', 'total']:
+                result_value = df_clean[agg_col].sum()
+                agg_name = "Total"
+            elif aggregation_type_lower in ['min', 'minimum', 'smallest']:
+                result_value = df_clean[agg_col].min()
+                agg_name = "Minimum"
+            elif aggregation_type_lower in ['max', 'maximum', 'largest']:
+                result_value = df_clean[agg_col].max()
+                agg_name = "Maximum"
+            elif aggregation_type_lower == 'count':
+                result_value = len(df_clean)
+                agg_name = "Count"
+            else:
+                return {"error": f"Unsupported aggregation type: {aggregation_type}"}
+
+            # Calculate sum for calculation explanations (useful for showing "total ÷ count = average")
+            total_sum = df_clean[agg_col].sum()
+
+            logger.info(
+                "Processed portfolio aggregation",
+                aggregation_type=aggregation_type,
+                field=aggregation_field,
+                result=result_value,
+                data_points=len(df_clean),
+            )
+
+            return {
+                "aggregation": agg_name,
+                "field": aggregation_field,
+                "field_column": agg_col,
+                "value": result_value,
+                "data_points": len(df_clean),
+                "total_sum": total_sum,  # For calculation explanations
+                "total_portfolio": len(df),
+            }
+
+        except Exception as e:
+            logger.error("Error processing portfolio aggregation", error=str(e), exc_info=True)
+            return {"error": f"Error calculating aggregation: {str(e)}"}
+
+    def process_time_series(self, df: pd.DataFrame, metric: str) -> Dict[str, Any]:
+        """
+        Extract time series data for a specific metric.
+
+        Args:
+            df: Fund metrics DataFrame
+            metric: Metric name (TVPI, DPI, IRR, etc.)
+
+        Returns:
+            Dictionary with time series data
+        """
+        try:
+            if df.empty:
+                return {"error": "No fund metrics data available"}
+
+            # Find the metric column (flexible matching)
+            metric_col = None
+            metric_lower = metric.lower()
+
+            # Try different matching strategies
+            for col in df.columns:
+                col_lower = col.lower()
+
+                # Strategy 1: Exact match
+                if col_lower == metric_lower:
+                    metric_col = col
+                    break
+
+                # Strategy 2: Match with "RV " prefix (e.g., "TVPI" matches "RV TVPI")
+                if col_lower == f"rv {metric_lower}":
+                    metric_col = col
+                    break
+
+                # Strategy 3: Column ends with metric (e.g., "TVPI" matches "RV TVPI")
+                if col_lower.endswith(metric_lower):
+                    metric_col = col
+                    break
+
+                # Strategy 4: Metric is in column name
+                if metric_lower in col_lower:
+                    metric_col = col
+                    break
+
+            if not metric_col:
+                return {"error": f"Metric '{metric}' not found in data. Available metrics: {', '.join(df.columns[1:])}"}
+
+            # Get the time period column (first column)
+            period_col = df.columns[0]
+
+            # Filter out rows with None/NaN/empty values for the metric
+            valid_df = df[df[metric_col].notna() & (df[metric_col] != '') & (df[metric_col] != 'None')]
+
+            if valid_df.empty:
+                return {"error": f"No valid data found for {metric}"}
+
+            # Find "Total up to Today" row (current state) FIRST before filtering
+            current_keywords = ['total up to today']
+            current_row = None
+            for keyword in current_keywords:
+                matching = valid_df[valid_df[period_col].astype(str).str.lower() == keyword]
+                if not matching.empty:
+                    current_row = matching.iloc[0]
+                    break
+
+            # Exclude summary rows and specific date formats (e.g., "3/31/2024")
+            # Keep only quarterly periods (Q1'21, Q2'22, etc.) and year ranges (2019-2020, 2021, etc.)
+            exclude_keywords = ['carry', 'average', 'summary', 'plan', 'diff', 'stage', 'region', 'year', 'total', 'commitments', '/']
+            time_series_df = valid_df[
+                ~valid_df[period_col].astype(str).str.lower().str.contains('|'.join(exclude_keywords), na=False)
+            ]
+
+            if time_series_df.empty:
+                # If filtering removed everything, return all valid data
+                time_series_df = valid_df
+
+            # Build time series result from historical data
+            time_series = []
+            for _, row in time_series_df.iterrows():
+                time_series.append({
+                    "period": row[period_col],
+                    "value": row[metric_col]
+                })
+
+            # Append current state ("Total up to Today") as the final data point
+            if current_row is not None:
+                # Check if it's not already in the time series
+                if not any(item["period"] == current_row[period_col] for item in time_series):
+                    time_series.append({
+                        "period": current_row[period_col],
+                        "value": current_row[metric_col]
+                    })
+
+            return {
+                "metric": metric,
+                "metric_column": metric_col,
+                "data_points": len(time_series),
+                "time_series": time_series
+            }
+
+        except Exception as e:
+            logger.error("Error processing time series", metric=metric, error=str(e))
+            return {"error": f"Error processing time series: {str(e)}"}
+
     def process_fund_metric(self, df: pd.DataFrame, metric: str, time_period: str = "latest") -> Dict[str, Any]:
         """
         Extract a specific fund metric.
@@ -203,6 +417,7 @@ class DataProcessor:
             'rv investment',
             'investment return',
             'last round post-money valuation',
+            'investment date',  # Added for "last investments" queries
             'founded',
             'hq',
         ]
@@ -262,30 +477,64 @@ class DataProcessor:
 
             logger.debug(f"Sorting by column: '{sort_col}' for search term: '{sort_by}', ascending={ascending}")
 
-            # Clean and convert to numeric
-            # Remove common formatting characters: $, K, M, commas, spaces
-            df[sort_col] = (
-                df[sort_col]
-                .astype(str)
-                .str.replace('$', '', regex=False)
-                .str.replace('K', '', regex=False)
-                .str.replace('M', '', regex=False)
-                .str.replace(',', '', regex=False)
-                .str.strip()
-            )
+            # Check if this is a date column
+            is_date_column = 'date' in sort_col.lower()
 
-            # Convert to numeric
-            df[sort_col] = pd.to_numeric(df[sort_col], errors='coerce')
+            if is_date_column:
+                # Handle date sorting
+                # Try to parse dates - pd.to_datetime handles many formats
+                df[sort_col + '_parsed'] = pd.to_datetime(df[sort_col], errors='coerce', format='%b-%Y')
 
-            # Drop rows where conversion failed (NaN)
-            df = df.dropna(subset=[sort_col])
+                # If that didn't work, try without format specification
+                if df[sort_col + '_parsed'].isna().all():
+                    df[sort_col + '_parsed'] = pd.to_datetime(df[sort_col], errors='coerce')
 
-            # Sort and take top N - RESET INDEX to preserve order!
-            result = (
-                df.sort_values(by=sort_col, ascending=ascending)
-                .head(limit)
-                .reset_index(drop=True)
-            )
+                # Drop rows where date parsing completely failed AND original value is empty
+                df = df[df[sort_col].notna() & (df[sort_col].astype(str).str.strip() != '')]
+
+                # Sort by parsed date if available, otherwise by string
+                if not df[sort_col + '_parsed'].isna().all():
+                    # Sort by parsed date
+                    result = (
+                        df.sort_values(by=sort_col + '_parsed', ascending=ascending)
+                        .head(limit)
+                        .reset_index(drop=True)
+                    )
+                    # Remove the temporary parsed column
+                    result = result.drop(columns=[sort_col + '_parsed'])
+                else:
+                    # Fallback to string sorting
+                    result = (
+                        df.sort_values(by=sort_col, ascending=ascending)
+                        .head(limit)
+                        .reset_index(drop=True)
+                    )
+            else:
+                # Handle numeric sorting (original logic)
+                # Clean and convert to numeric
+                # Remove common formatting characters: $, K, M, commas, spaces
+                df[sort_col] = (
+                    df[sort_col]
+                    .astype(str)
+                    .str.replace('$', '', regex=False)
+                    .str.replace('K', '', regex=False)
+                    .str.replace('M', '', regex=False)
+                    .str.replace(',', '', regex=False)
+                    .str.strip()
+                )
+
+                # Convert to numeric
+                df[sort_col] = pd.to_numeric(df[sort_col], errors='coerce')
+
+                # Drop rows where conversion failed (NaN)
+                df = df.dropna(subset=[sort_col])
+
+                # Sort and take top N - RESET INDEX to preserve order!
+                result = (
+                    df.sort_values(by=sort_col, ascending=ascending)
+                    .head(limit)
+                    .reset_index(drop=True)
+                )
 
             # Select key columns unless user wants all details
             result = self._select_key_columns(result, show_all=show_all_details)
@@ -383,11 +632,25 @@ class DataProcessor:
         elif intent.query_type == QueryType.COMPANY_DETAIL:
             if intent.company_name:
                 filters = {"company_name": intent.company_name}
-                # For specific company details, show all columns by default
+                # Always send all columns to GPT, let GPT filter what to show in response
+                # This ensures GPT has access to any field the user might be asking about
+                # (e.g., investment date, stage, description, etc.)
                 return self.process_portfolio_list(
                     portfolio_df, filters, show_all_details=True
                 )
             return {"error": "No company name specified"}
+
+        elif intent.query_type == QueryType.TIME_SERIES:
+            if not intent.metric:
+                return {"error": "No metric specified for time series"}
+            return self.process_time_series(fund_df, intent.metric)
+
+        elif intent.query_type == QueryType.PORTFOLIO_AGGREGATION:
+            if not intent.aggregation_type or not intent.aggregation_field:
+                return {"error": "Aggregation type and field must be specified"}
+            return self.process_portfolio_aggregation(
+                portfolio_df, intent.aggregation_type, intent.aggregation_field, intent.filters
+            )
 
         else:
             return {"error": "Unknown query type"}

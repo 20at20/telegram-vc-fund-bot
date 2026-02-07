@@ -44,12 +44,25 @@ class OpenAIService:
 Analyze user questions and extract structured intent.
 
 Available query types:
-- fund_metric: Questions about fund-level metrics (TVPI, DPI, IRR, etc.)
+- fund_metric: Questions about fund-level financial metrics (TVPI, DPI, IRR, portfolio value, realized value)
 - portfolio_ranking: Top N companies by some criteria
-- portfolio_list: List companies with filters
+- portfolio_list: List companies with filters, OR count/number of companies in portfolio
 - company_detail: Information about a specific company
 - time_series: Performance over time
+- portfolio_aggregation: Aggregate calculations across portfolio (average, median, sum, min, max, total)
 - general_chat: General questions, follow-ups, elaborations, or anything not requiring data lookup
+
+IMPORTANT - DISTINGUISH BETWEEN PORTFOLIO COUNT vs TOTAL INVESTMENTS:
+- "How many companies in portfolio?" → portfolio_list (counts current RV portfolio companies)
+- "Number of portfolio companies?" → portfolio_list (counts current RV portfolio companies)
+- "How many deals we made?" → fund_metric with metric: "Investments" (total investments ever made)
+- "Total number of investments?" → fund_metric with metric: "Investments" (total investments ever made)
+- "How many investments did we make?" → fund_metric with metric: "Investments" (total investments ever made)
+
+CRITICAL:
+- Portfolio count = current companies in portfolio
+- Total investments/deals = all-time investments (includes exits, write-offs)
+- Use "Investments" fund_metric for total deal count, NOT portfolio_list
 
 Available fund metrics (use simple names):
 - TVPI (Total Value to Paid In)
@@ -63,10 +76,16 @@ Common portfolio fields for ranking/filtering:
 - investment (for RV investment amount in dollars)
 - return (for investment return MULTIPLIER, e.g., 7.1x means 7.1 times the investment)
 - valuation (for company valuation)
+- investment date (for when we invested - use this for "last", "recent", "latest", "newest" investments)
 - stage (for investment stage)
 - vertical (for industry sector)
 - region (for geographic location)
 - founded (for founding date)
+
+IMPORTANT SORTING RULES:
+- "Last N investments" / "Recent N investments" / "Latest N investments" → sort_by: "investment date" (NOT investment amount)
+- "Top N investments" / "Largest N investments" → sort_by: "investment" (amount)
+- "Last" / "Recent" / "Latest" / "Newest" refer to TIME (date), not size (amount)
 
 Extract and return JSON with:
 - query_type: one of the types above
@@ -76,17 +95,36 @@ Extract and return JSON with:
 - limit: how many results to show
 - company_name: specific company if mentioned
 - time_period: time period if specified (latest, Q1 2024, etc.)
+- aggregation_type: type of aggregation (average, median, sum, min, max, total, count) - for portfolio_aggregation queries
+- aggregation_field: field to aggregate on (investment, return, valuation, etc.) - for portfolio_aggregation queries
 - show_all_details: true if user explicitly asks for "more details", "full info", "everything", "all columns", etc.; false by default
 - ascending: true if user asks for "worst", "lowest", "bottom", "smallest"; false for "top", "best", "highest", "largest" (default: false)
 
 Examples:
 "What's our current TVPI?" → {"query_type": "fund_metric", "metric": "TVPI", "time_period": "latest"}
+"How many companies in portfolio?" → {"query_type": "portfolio_list", "filters": {}}
+"Number of portfolio companies?" → {"query_type": "portfolio_list", "filters": {}}
+"How many deals we made?" → {"query_type": "fund_metric", "metric": "Investments", "time_period": "latest"}
+"Total number of investments?" → {"query_type": "fund_metric", "metric": "Investments", "time_period": "latest"}
+"How many investments did we make?" → {"query_type": "fund_metric", "metric": "Investments", "time_period": "latest"}
+"What's our average check size?" → {"query_type": "portfolio_aggregation", "aggregation_type": "average", "aggregation_field": "investment"}
+"Average investment amount?" → {"query_type": "portfolio_aggregation", "aggregation_type": "average", "aggregation_field": "investment"}
+"Total invested capital?" → {"query_type": "portfolio_aggregation", "aggregation_type": "sum", "aggregation_field": "investment"}
+"What's our average return?" → {"query_type": "portfolio_aggregation", "aggregation_type": "average", "aggregation_field": "return"}
+"Median return across portfolio?" → {"query_type": "portfolio_aggregation", "aggregation_type": "median", "aggregation_field": "return"}
+"Our 3 last investments" → {"query_type": "portfolio_ranking", "sort_by": "investment date", "limit": 3, "ascending": false}
+"5 most recent investments" → {"query_type": "portfolio_ranking", "sort_by": "investment date", "limit": 5, "ascending": false}
+"Latest companies we invested in" → {"query_type": "portfolio_ranking", "sort_by": "investment date", "limit": 5, "ascending": false}
 "Top 5 companies by investment amount" → {"query_type": "portfolio_ranking", "sort_by": "investment", "limit": 5, "ascending": false}
 "Top companies by return" → {"query_type": "portfolio_ranking", "sort_by": "return", "limit": 5, "ascending": false}
 "Worst 5 companies by return" → {"query_type": "portfolio_ranking", "sort_by": "return", "limit": 5, "ascending": true}
 "Bottom performers" → {"query_type": "portfolio_ranking", "sort_by": "return", "limit": 5, "ascending": true}
 "Show fintech companies" → {"query_type": "portfolio_list", "filters": {"vertical": "fintech"}, "show_all_details": false}
 "Show me more details about the top companies" → {"query_type": "portfolio_ranking", "limit": 5, "show_all_details": true}
+"What was the trend of DPI?" → {"query_type": "time_series", "metric": "DPI"}
+"How DPI was changing over quarters?" → {"query_type": "time_series", "metric": "DPI"}
+"Show me TVPI over time" → {"query_type": "time_series", "metric": "TVPI"}
+"IRR history" → {"query_type": "time_series", "metric": "IRR"}
 "Can you elaborate on that?" → {"query_type": "general_chat"}
 "What does TVPI mean?" → {"query_type": "general_chat"}
 """,
@@ -151,11 +189,63 @@ Present data clearly and concisely. Use Telegram markdown formatting:
 - `code` for numbers/metrics
 - Lists for multiple items
 
+CRITICAL: ONLY INCLUDE RELEVANT INFORMATION
+- Analyze what the user is specifically asking for
+- Include ONLY the data fields that directly answer their question
+- DO NOT include tangential or unrequested information
+- Be brief and focused
+
+Examples:
+- "When did we invest in Deel?" → Only show investment date, nothing else
+- "What's our TVPI?" → Only show TVPI value and period
+- "Top 5 investments" → Only show company names and investment amounts
+- "Tell me about Deel" → Show comprehensive details (this is a broad request)
+- "DPI trend over time" → Show all time periods with values, formatted as a clear progression
+
+FOR TIME SERIES DATA:
+- Present data chronologically (oldest to newest)
+- Use clear formatting to show progression
+- Highlight trends (increasing, decreasing, stable)
+- Consider adding simple trend indicators (↑ ↓ →) if values change significantly
+
 IMPORTANT FORMATTING RULES:
 - "Investment Return" or "return" field is a MULTIPLIER (e.g., 7.1 means 7.1x return), NOT dollars
   Display as "7.1x" or "7.1 times", NEVER as "$7.1K"
 - "RV Investment" is in dollars, display as "$145K" or similar
 - "Valuation" is in dollars/millions, display with $ and M/K suffix
+
+FOR COUNTING QUERIES:
+- If METADATA is provided with row count, use that exact number
+- NEVER count rows yourself - always use the METADATA count
+- Example: If METADATA says "63 rows", respond with exactly 63
+
+FOR AGGREGATION RESULTS (average, median, sum, etc.):
+- ALWAYS include a brief calculation explanation in parentheses
+- Use the "total_sum" and "data_points" fields provided in the data
+- Show the formula with actual numbers used
+- Examples:
+  * Average: "Average check: `$237.63K` (total `$14,970.60K` ÷ 63 companies)"
+  * Median: "Median return: `4.2x` (middle value of 63 investments)"
+  * Sum/Total: "Total invested: `$14,970.60K` (sum of 63 investments)"
+  * Min/Max: "Largest investment: `$500K` (max of 63 companies)"
+- This helps users understand where the number comes from immediately
+
+FOR METHODOLOGY QUESTIONS ("how you calculated it?", "where's that from?", "how did you get that?"):
+- Look at CONVERSATION HISTORY to find the previous calculation
+- Extract the data points and formula used
+- Explain step-by-step with specific numbers
+- Examples:
+  * User asks "how you calculated it?" after seeing average check
+    → "I calculated the average check by dividing the total invested capital (`$14,970.60K`) by the number of companies (63), which equals `$237.63K` per company."
+  * User asks "how did you get that number?"
+    → "I used the [aggregation type] of the [field name] across [N] companies: [specific formula with numbers]"
+- Be specific and reference the exact data used
+
+FOR FOLLOW-UP CALCULATIONS:
+- When user asks to "divide these numbers", "calculate ratio", or refers to previous values
+- Extract numbers from CONVERSATION HISTORY (your previous responses)
+- Perform the requested calculation
+- Show your work: "72 deals ÷ 63 companies = 1.14 deals per company"
 
 Keep responses under 4000 characters (Telegram limit).
 If data is empty or missing, say so politely and suggest alternatives.
@@ -165,13 +255,20 @@ If data is empty or missing, say so politely and suggest alternatives.
 
             # Add conversation history if provided
             if conversation_history:
-                messages.extend(conversation_history[-2:])  # Last 2 messages
+                messages.extend(conversation_history[-6:])  # Last 6 messages (3 exchanges)
 
-            # Add current request
+            # Add current request with explicit metadata
             data_str = str(data) if data is not None else "No data found"
+
+            # Add helpful metadata for counting queries
+            metadata = ""
+            if hasattr(data, '__len__') and hasattr(data, 'shape'):
+                # It's a DataFrame
+                metadata = f"\n\nMETADATA: This DataFrame has {len(data)} rows (companies)."
+
             messages.append({
                 "role": "user",
-                "content": f"User asked: '{original_query}'\n\nData: {data_str}\n\nGenerate a helpful response in Telegram markdown format.",
+                "content": f"User asked: '{original_query}'\n\nData: {data_str}{metadata}\n\nGenerate a helpful response in Telegram markdown format.",
             })
 
             # Call OpenAI

@@ -46,6 +46,8 @@ class QueryAnalyzer:
                 limit=intent_data.get("limit"),
                 company_name=intent_data.get("company_name"),
                 time_period=intent_data.get("time_period", "latest"),
+                aggregation_type=intent_data.get("aggregation_type"),
+                aggregation_field=intent_data.get("aggregation_field"),
                 show_all_details=intent_data.get("show_all_details", False),
                 ascending=intent_data.get("ascending", False),
                 confidence=intent_data.get("confidence", 1.0),
