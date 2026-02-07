@@ -86,9 +86,31 @@ class DataProcessor:
 
             # Get latest or specific period
             if time_period == "latest":
-                # Assume last row is most recent
-                value = df[metric_col].iloc[-1]
-                period = df.iloc[-1].get(df.columns[0], "Latest")  # First column usually has period
+                # Filter out rows with None/NaN/empty values
+                valid_df = df[df[metric_col].notna() & (df[metric_col] != '') & (df[metric_col] != 'None')]
+
+                if valid_df.empty:
+                    return {"error": f"No valid data found for {metric}"}
+
+                # Prefer "Total up to Today" or similar current summary rows
+                period_col = df.columns[0]
+                current_keywords = ['total up to today', 'current', 'latest', 'today']
+
+                for keyword in current_keywords:
+                    matching = valid_df[valid_df[period_col].astype(str).str.lower().str.contains(keyword, na=False)]
+                    if not matching.empty:
+                        value = matching[metric_col].iloc[-1]
+                        period = matching[period_col].iloc[-1]
+                        logger.info(f"Found current metric using keyword '{keyword}'", metric=metric, period=period)
+                        return {
+                            "metric": metric,
+                            "value": value,
+                            "period": period,
+                        }
+
+                # Otherwise, use the last valid row
+                value = valid_df[metric_col].iloc[-1]
+                period = valid_df.iloc[-1].get(df.columns[0], "Latest")  # First column usually has period
             else:
                 # Try to find specific period
                 period_col = df.columns[0]  # Assume first column is period
@@ -135,16 +157,11 @@ class DataProcessor:
             if col.lower().strip().endswith(search_lower):
                 return col
 
-        # Strategy 3: Search term is in column
-        for col in df.columns:
-            if search_lower in col.lower():
-                return col
-
-        # Strategy 4: Handle common aliases
+        # Strategy 3: Handle common aliases (MOVED UP - check before broad substring)
         aliases = {
-            "return": ["return", "investment return", "investment (w/o fees) return"],
-            "investment": ["rv investment", "investment", "rv investment, $k"],
-            "valuation": ["valuation", "post valuation", "post-money valuation"],
+            "return": ["investment (w/o fees) return", "investment return", "return"],
+            "investment": ["rv investment, $k", "rv investment", "investment amount"],
+            "valuation": ["last round post-money valuation", "post valuation", "valuation"],
             "company": ["company name", "name"],
             "stage": ["stage", "investment stage", "round stage"],
         }
@@ -154,7 +171,14 @@ class DataProcessor:
                 for variation in variations:
                     for col in df.columns:
                         if variation in col.lower():
+                            logger.debug(f"Matched '{search_term}' to column '{col}' via alias '{variation}'")
                             return col
+
+        # Strategy 4: Broad substring match (as fallback only)
+        for col in df.columns:
+            if search_lower in col.lower():
+                logger.debug(f"Matched '{search_term}' to column '{col}' via substring")
+                return col
 
         return None
 
