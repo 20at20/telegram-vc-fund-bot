@@ -5,6 +5,12 @@ Main entry point for the Telegram VC Fund Metrics Bot.
 import asyncio
 import signal
 import sys
+import os
+
+# Add project root to Python path (ensures imports work in all environments)
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
 
 from telegram.ext import (
     Application,
