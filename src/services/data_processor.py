@@ -150,19 +150,47 @@ class DataProcessor:
 
     def process_time_series(self, df: pd.DataFrame, metric: str) -> Dict[str, Any]:
         """
-        Extract time series data for a specific metric.
+        Extract time series data for one or more metrics.
 
         Args:
             df: Fund metrics DataFrame
-            metric: Metric name (TVPI, DPI, IRR, etc.)
+            metric: Metric name or comma-separated names (TVPI, DPI, or "TVPI,DPI")
 
         Returns:
-            Dictionary with time series data
+            Dictionary with time series data for all requested metrics
         """
         try:
             if df.empty:
                 return {"error": "No fund metrics data available"}
 
+            # Handle comma-separated metrics (e.g., "TVPI,DPI")
+            metrics = [m.strip() for m in metric.split(',')]
+
+            # Process each metric separately
+            all_series = {}
+            for single_metric in metrics:
+                result = self._process_single_metric_time_series(df, single_metric)
+                if "error" in result:
+                    return result  # Return error if any metric fails
+                all_series[single_metric] = result
+
+            # If only one metric, return it directly (backward compatibility)
+            if len(all_series) == 1:
+                return list(all_series.values())[0]
+
+            # For multiple metrics, return combined result
+            return {
+                "metrics": list(all_series.keys()),
+                "series": all_series
+            }
+
+        except Exception as e:
+            logger.error("Error processing time series", metric=metric, error=str(e))
+            return {"error": f"Error processing time series: {str(e)}"}
+
+    def _process_single_metric_time_series(self, df: pd.DataFrame, metric: str) -> Dict[str, Any]:
+        """Process time series for a single metric."""
+        try:
             # Find the metric column (flexible matching)
             metric_col = None
             metric_lower = metric.lower()
