@@ -48,9 +48,15 @@ Available query types:
 - portfolio_ranking: Top N companies by some criteria
 - portfolio_list: List companies with filters, OR count/number of companies in portfolio
 - company_detail: Information about a specific company
-- time_series: Performance over time
+- time_series: Performance over time, trends, comparisons of metrics over time
 - portfolio_aggregation: Aggregate calculations across portfolio (average, median, sum, min, max, total)
-- general_chat: General questions, follow-ups, elaborations, or anything not requiring data lookup
+- general_chat: ONLY for definition questions, explanations of concepts, greetings, or questions unrelated to data
+
+CRITICAL DISTINCTION - fund_metric vs general_chat:
+- "What is TVPI?" → general_chat (asking for definition)
+- "What is fund TVPI?" / "What is our TVPI?" / "Show fund TVPI" → fund_metric (asking for actual value)
+- "Compare TVPI and DPI" / "TVPI vs DPI" → time_series (comparison of metrics)
+- If query mentions "fund", "our", "current", "portfolio" + a metric → ALWAYS fund_metric or time_series, NEVER general_chat
 
 IMPORTANT - DISTINGUISH BETWEEN PORTFOLIO COUNT vs TOTAL INVESTMENTS:
 - "How many companies in portfolio?" → portfolio_list (counts current RV portfolio companies)
@@ -102,6 +108,12 @@ Extract and return JSON with:
 
 Examples:
 "What's our current TVPI?" → {"query_type": "fund_metric", "metric": "TVPI", "time_period": "latest"}
+"What is fund TVPI?" → {"query_type": "fund_metric", "metric": "TVPI", "time_period": "latest"}
+"Show me fund DPI" → {"query_type": "fund_metric", "metric": "DPI", "time_period": "latest"}
+"Compare TVPI and DPI" → {"query_type": "time_series", "metric": "TVPI,DPI"}
+"TVPI vs DPI over time" → {"query_type": "time_series", "metric": "TVPI,DPI"}
+"What is TVPI?" → {"query_type": "general_chat"}
+"Explain what IRR means" → {"query_type": "general_chat"}
 "How many companies in portfolio?" → {"query_type": "portfolio_list", "filters": {}}
 "Number of portfolio companies?" → {"query_type": "portfolio_list", "filters": {}}
 "How many deals we made?" → {"query_type": "fund_metric", "metric": "Investments", "time_period": "latest"}
