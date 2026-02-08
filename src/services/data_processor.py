@@ -412,7 +412,7 @@ class DataProcessor:
             "company_name": ["company name", "name"],
 
             # Geographic/Location - Critical for queries like "french companies" or "companies in europe"
-            "country": ["country", "hq country", "headquarters country", "location"],
+            "country": ["country", "hq country", "headquarters country", "hq", "headquarters", "location"],
             "region": ["region", "geography", "hq", "headquarters", "location"],
             "hq": ["hq", "headquarters", "hq location", "location", "office"],
             "location": ["location", "hq", "headquarters", "region", "geography"],
@@ -633,8 +633,11 @@ class DataProcessor:
             if df.empty:
                 return df
 
+            logger.debug(f"Starting portfolio_list with {len(df)} total companies")
+
             # Filter to RV portfolio only
             result = self._filter_rv_portfolio(df.copy())
+            logger.debug(f"After RV portfolio filter: {len(result)} companies remain")
 
             # Apply each filter
             for key, value in filters.items():
