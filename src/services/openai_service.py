@@ -161,6 +161,9 @@ CRITICAL EXAMPLES - Geographic and Sector Filtering:
 "European fintech" → {"query_type": "portfolio_list", "filters": {"region": "Europe", "vertical": "fintech"}}
 "Companies founded in 2020" → {"query_type": "portfolio_list", "filters": {"founded": "2020"}}
 "Companies we invested in 2023" → {"query_type": "portfolio_list", "filters": {"investment_date": "2023"}}
+"Companies without funding for 3+ years" → {"query_type": "portfolio_list", "filters": {"years_since_last_financing": "3"}}
+"Which companies had 3 years+ without new round?" → {"query_type": "portfolio_list", "filters": {"years_since_last_financing": "3"}}
+"Companies that haven't raised in 2+ years" → {"query_type": "portfolio_list", "filters": {"years_since_last_financing": "2"}}
 """,
                 }
             ]

@@ -432,6 +432,8 @@ class DataProcessor:
             "founded": ["founded", "founding date", "year founded", "founded year", "inception"],
             "last_round_date": ["last round date", "last funding date", "last raise date", "latest round"],
             "last round date": ["last round date", "last funding date", "last raise date", "latest round"],
+            "years_since_last_financing": ["years since last financing", "years since funding", "years without funding", "time since last round"],
+            "years since last financing": ["years since last financing", "years since funding", "years without funding", "time since last round"],
 
             # Status fields
             "status": ["status", "company status", "investment status"],
@@ -640,10 +642,29 @@ class DataProcessor:
                 filter_col = self._find_column(result, key)
 
                 if filter_col:
-                    # Apply filter (case-insensitive string contains)
-                    result = result[
-                        result[filter_col].astype(str).str.contains(str(value), case=False, na=False)
-                    ]
+                    # Check if this is a numeric comparison field (e.g., "years since last financing")
+                    is_numeric_field = any(keyword in filter_col.lower() for keyword in ['years', 'year', 'age', 'duration', 'time since'])
+
+                    if is_numeric_field:
+                        # Try numeric comparison (greater than or equal)
+                        try:
+                            # Clean and convert column to numeric
+                            numeric_col = pd.to_numeric(result[filter_col], errors='coerce')
+                            threshold = float(str(value).replace('+', '').strip())
+
+                            # Filter for values >= threshold
+                            result = result[numeric_col >= threshold]
+                            logger.debug(f"Applied numeric filter: {filter_col} >= {threshold}")
+                        except (ValueError, TypeError):
+                            # If numeric conversion fails, fall back to string matching
+                            result = result[
+                                result[filter_col].astype(str).str.contains(str(value), case=False, na=False)
+                            ]
+                    else:
+                        # Apply string filter (case-insensitive contains)
+                        result = result[
+                            result[filter_col].astype(str).str.contains(str(value), case=False, na=False)
+                        ]
                 else:
                     logger.warning("Filter column not found", key=key, available=list(result.columns))
 
