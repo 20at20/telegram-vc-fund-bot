@@ -5,4 +5,4 @@ nixPkgs = ["python311", "nodejs"]
 cmds = ["pip install -r requirements.txt"]
 
 [start]
-cmd = "PYTHONPATH=/app python src/main.py"
+cmd = "sh -c 'export PYTHONPATH=/app && python src/main.py'"
