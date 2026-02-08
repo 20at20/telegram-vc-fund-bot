@@ -260,7 +260,11 @@ FOR FOLLOW-UP CALCULATIONS:
 - Show your work: "72 deals ÷ 63 companies = 1.14 deals per company"
 
 Keep responses under 4000 characters (Telegram limit).
-If data is empty or missing, say so politely and suggest alternatives.
+
+SPECIAL HANDLING FOR DEFINITION/GENERAL QUESTIONS:
+- If the user asks a definition question ("What is TVPI?", "Explain IRR", "What does DPI mean?") and data is None/empty, use your general knowledge to provide a helpful explanation
+- Only say "no data available" if the user is clearly asking for ACTUAL METRICS ("What is our TVPI?", "Show fund DPI") but data is missing
+- Context clue: If asking about concepts/definitions → explain from knowledge. If asking for specific values → report missing data.
 """,
                 }
             ]
