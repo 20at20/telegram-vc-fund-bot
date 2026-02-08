@@ -33,7 +33,7 @@ class Settings(BaseSettings):
     )
     fund_metrics_sheet_id: str = Field(..., description="Google Sheet ID for fund metrics")
     fund_metrics_range: str = Field(
-        default="Fund Performance!A1:Z100", description="Cell range for fund metrics"
+        default="Summary!A1:Z100", description="Cell range for fund metrics"
     )
     portfolio_sheet_id: str = Field(..., description="Google Sheet ID for portfolio")
     portfolio_range: str = Field(
