@@ -400,12 +400,46 @@ class DataProcessor:
                 return col
 
         # Strategy 3: Handle common aliases (MOVED UP - check before broad substring)
+        # Comprehensive column mapping system - maps user filter terms to Google Sheets columns
         aliases = {
-            "return": ["investment (w/o fees) return", "investment return", "return"],
-            "investment": ["rv investment, $k", "rv investment", "investment amount"],
-            "valuation": ["last round post-money valuation", "post valuation", "valuation"],
-            "company": ["company name", "name"],
-            "stage": ["stage", "investment stage", "round stage"],
+            # Financial metrics
+            "return": ["investment (w/o fees) return", "investment return", "return", "multiple", "x return"],
+            "investment": ["rv investment, $k", "rv investment", "investment amount", "check size", "invested"],
+            "valuation": ["last round post-money valuation", "post valuation", "post-money valuation", "valuation", "post money"],
+
+            # Company identification
+            "company": ["company name", "name", "portfolio company"],
+            "company_name": ["company name", "name"],
+
+            # Geographic/Location - Critical for queries like "french companies" or "companies in europe"
+            "country": ["country", "hq country", "headquarters country", "location"],
+            "region": ["region", "geography", "hq", "headquarters", "location"],
+            "hq": ["hq", "headquarters", "hq location", "location", "office"],
+            "location": ["location", "hq", "headquarters", "region", "geography"],
+
+            # Sector/Industry - Critical for queries like "fintech companies" or "ai companies"
+            "vertical": ["vertical", "sector", "industry", "category", "space"],
+            "sector": ["sector", "vertical", "industry", "category"],
+            "industry": ["industry", "vertical", "sector", "category"],
+
+            # Stage/Round
+            "stage": ["stage", "investment stage", "round stage", "series", "round"],
+            "round": ["round", "last round", "funding round", "stage"],
+
+            # Temporal/Dates - For queries about timing
+            "investment_date": ["investment date", "date invested", "investment year", "year invested", "invested date"],
+            "investment date": ["investment date", "date invested", "investment year", "year invested", "invested date"],
+            "founded": ["founded", "founding date", "year founded", "founded year", "inception"],
+            "last_round_date": ["last round date", "last funding date", "last raise date", "latest round"],
+            "last round date": ["last round date", "last funding date", "last raise date", "latest round"],
+
+            # Status fields
+            "status": ["status", "company status", "investment status"],
+            "is_rv_portfolio": ["is rv portfolio", "rv portfolio", "portfolio status", "in portfolio"],
+
+            # Exit information
+            "exit_date": ["exit date", "exit year", "date exited", "exited"],
+            "exit_type": ["exit type", "exit method", "exit strategy"],
         }
 
         for alias, variations in aliases.items():

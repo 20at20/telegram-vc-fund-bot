@@ -83,10 +83,10 @@ Common portfolio fields for ranking/filtering:
 - return (for investment return MULTIPLIER, e.g., 7.1x means 7.1 times the investment)
 - valuation (for company valuation)
 - investment date (for when we invested - use this for "last", "recent", "latest", "newest" investments)
-- stage (for investment stage)
-- vertical (for industry sector)
-- region (for geographic location)
-- founded (for founding date)
+- stage (for investment stage: seed, series A, B, C, etc.)
+- vertical / sector / industry (for industry sector: fintech, AI, healthtech, etc.)
+- country / region / hq / location (for geographic location: France, Europe, London, US, UK, etc.)
+- founded (for founding year: 2020, 2018, etc.)
 
 IMPORTANT SORTING RULES:
 - "Last N investments" / "Recent N investments" / "Latest N investments" → sort_by: "investment date" (NOT investment amount)
@@ -139,6 +139,28 @@ Examples:
 "IRR history" → {"query_type": "time_series", "metric": "IRR"}
 "Can you elaborate on that?" → {"query_type": "general_chat"}
 "What does TVPI mean?" → {"query_type": "general_chat"}
+
+CRITICAL EXAMPLES - Geographic and Sector Filtering:
+"What are french companies in portfolio?" → {"query_type": "portfolio_list", "filters": {"country": "France"}}
+"French companies" → {"query_type": "portfolio_list", "filters": {"country": "France"}}
+"Show me French companies" → {"query_type": "portfolio_list", "filters": {"country": "France"}}
+"Companies in France" → {"query_type": "portfolio_list", "filters": {"country": "France"}}
+"Show companies in Europe" → {"query_type": "portfolio_list", "filters": {"region": "Europe"}}
+"European companies" → {"query_type": "portfolio_list", "filters": {"region": "Europe"}}
+"Companies in US" → {"query_type": "portfolio_list", "filters": {"country": "US"}}
+"US-based companies" → {"query_type": "portfolio_list", "filters": {"country": "US"}}
+"Companies in London" → {"query_type": "portfolio_list", "filters": {"hq": "London"}}
+"London companies" → {"query_type": "portfolio_list", "filters": {"hq": "London"}}
+"Show AI companies" → {"query_type": "portfolio_list", "filters": {"vertical": "AI"}}
+"AI companies in portfolio" → {"query_type": "portfolio_list", "filters": {"vertical": "AI"}}
+"Companies in fintech sector" → {"query_type": "portfolio_list", "filters": {"sector": "fintech"}}
+"Healthtech companies" → {"query_type": "portfolio_list", "filters": {"vertical": "healthtech"}}
+"Show me SaaS companies" → {"query_type": "portfolio_list", "filters": {"vertical": "SaaS"}}
+"Fintech companies in France" → {"query_type": "portfolio_list", "filters": {"vertical": "fintech", "country": "France"}}
+"US-based AI companies" → {"query_type": "portfolio_list", "filters": {"country": "US", "vertical": "AI"}}
+"European fintech" → {"query_type": "portfolio_list", "filters": {"region": "Europe", "vertical": "fintech"}}
+"Companies founded in 2020" → {"query_type": "portfolio_list", "filters": {"founded": "2020"}}
+"Companies we invested in 2023" → {"query_type": "portfolio_list", "filters": {"investment_date": "2023"}}
 """,
                 }
             ]
