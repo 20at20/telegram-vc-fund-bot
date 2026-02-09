@@ -11,6 +11,26 @@ from src.utils.logger import get_logger
 logger = get_logger(__name__)
 
 
+# Industry vertical synonyms mapping - helps match user queries to actual sheet values
+# E.g., "finance" or "financial industry" should match "fintech"
+VERTICAL_SYNONYMS = {
+    "fintech": ["fintech", "financial", "finance", "banking", "financial services", "fin-tech", "payments"],
+    "healthtech": ["healthtech", "health", "healthcare", "medical", "digital health", "health tech", "medtech"],
+    "ai": ["ai", "artificial intelligence", "machine learning", "ml", "deep learning", "generative ai"],
+    "saas": ["saas", "software as a service", "cloud software", "enterprise software", "b2b software"],
+    "ecommerce": ["ecommerce", "e-commerce", "retail", "online retail", "commerce", "marketplace"],
+    "edtech": ["edtech", "education", "ed-tech", "learning", "educational technology", "e-learning"],
+    "proptech": ["proptech", "real estate", "property", "prop-tech", "real-estate"],
+    "insurtech": ["insurtech", "insurance", "insur-tech"],
+    "crypto": ["crypto", "blockchain", "web3", "cryptocurrency", "defi", "digital assets"],
+    "mobility": ["mobility", "transportation", "transport", "automotive", "logistics", "delivery"],
+    "cybersecurity": ["cybersecurity", "security", "cyber security", "infosec", "cyber"],
+    "gaming": ["gaming", "games", "esports", "video games", "entertainment"],
+    "climate": ["climate", "cleantech", "climate tech", "sustainability", "green tech"],
+    "foodtech": ["foodtech", "food", "food tech", "agriculture", "agtech"],
+}
+
+
 class DataProcessor:
     """Processes fund and portfolio data based on query intent."""
 
@@ -36,6 +56,29 @@ class DataProcessor:
             logger.debug("Filtered to RV portfolio only", count=len(df))
 
         return df
+
+    def _expand_vertical_filter(self, user_value: str) -> list:
+        """
+        Expand a vertical/sector filter to include synonyms.
+
+        E.g., "finance" → ["fintech", "financial", "finance", "banking", ...]
+
+        Args:
+            user_value: The value the user searched for
+
+        Returns:
+            List of synonyms to search for (including original value)
+        """
+        user_value_lower = user_value.lower().strip()
+
+        # Check if user value matches any synonym in our mappings
+        for main_vertical, synonyms in VERTICAL_SYNONYMS.items():
+            if user_value_lower in synonyms:
+                logger.debug(f"Expanded vertical '{user_value}' to synonyms: {synonyms}")
+                return synonyms
+
+        # If no match, return original value
+        return [user_value]
 
     def process_portfolio_aggregation(
         self, df: pd.DataFrame, aggregation_type: str, aggregation_field: str, filters: Dict[str, Any] = None
@@ -648,6 +691,9 @@ class DataProcessor:
                     # Check if this is a numeric comparison field (e.g., "years since last financing")
                     is_numeric_field = any(keyword in filter_col.lower() for keyword in ['years', 'year', 'age', 'duration', 'time since'])
 
+                    # Check if this is a vertical/sector/industry field
+                    is_vertical_field = any(keyword in filter_col.lower() for keyword in ['vertical', 'sector', 'industry', 'category'])
+
                     if is_numeric_field:
                         # Try numeric comparison (greater than or equal)
                         try:
@@ -663,6 +709,17 @@ class DataProcessor:
                             result = result[
                                 result[filter_col].astype(str).str.contains(str(value), case=False, na=False)
                             ]
+                    elif is_vertical_field:
+                        # Expand vertical filter with synonyms (e.g., "finance" → ["fintech", "financial", "finance", ...])
+                        synonyms = self._expand_vertical_filter(str(value))
+
+                        # Create OR filter: match if ANY synonym is found in the column value
+                        mask = pd.Series([False] * len(result), index=result.index)
+                        for synonym in synonyms:
+                            mask |= result[filter_col].astype(str).str.contains(synonym, case=False, na=False)
+
+                        result = result[mask]
+                        logger.debug(f"Applied vertical filter: {filter_col} matches any of {synonyms}")
                     else:
                         # Apply string filter (case-insensitive contains)
                         result = result[
