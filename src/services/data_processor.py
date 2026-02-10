@@ -694,6 +694,9 @@ class DataProcessor:
                     # Check if this is a vertical/sector/industry field
                     is_vertical_field = any(keyword in filter_col.lower() for keyword in ['vertical', 'sector', 'industry', 'category'])
 
+                    # Check if this is a company name field
+                    is_company_field = any(keyword in filter_col.lower() for keyword in ['company', 'name'])
+
                     if is_numeric_field:
                         # Try numeric comparison (greater than or equal)
                         try:
@@ -720,6 +723,18 @@ class DataProcessor:
 
                         result = result[mask]
                         logger.debug(f"Applied vertical filter: {filter_col} matches any of {synonyms}")
+                    elif is_company_field:
+                        # Normalize both sides to handle spacing/capitalization differences
+                        # e.g., "ElevenLabs" matches "Eleven Labs", "Eleven Labs1", etc.
+                        normalized_value = str(value).lower().replace(" ", "").replace("-", "")
+                        normalized_col = (
+                            result[filter_col].astype(str)
+                            .str.lower()
+                            .str.replace(" ", "", regex=False)
+                            .str.replace("-", "", regex=False)
+                        )
+                        result = result[normalized_col.str.contains(normalized_value, na=False)]
+                        logger.debug(f"Applied company name filter (normalized): '{value}' → '{normalized_value}', found {len(result)} matches")
                     else:
                         # Apply string filter (case-insensitive contains)
                         result = result[
