@@ -12,6 +12,7 @@ from src.services.data_processor import data_processor
 from src.services.response_generator import response_generator
 from src.utils.logger import get_logger
 from src.utils.validators import sanitize_input
+from src.utils.query_csv_logger import log_query_to_csv
 
 logger = get_logger(__name__)
 
@@ -113,6 +114,8 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         query=user_question,
     )
 
+    intent = None
+    success = True
     try:
         # Sanitize input
         user_question = sanitize_input(user_question)
@@ -157,6 +160,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logger.info("Query processed successfully", user_id=user_id)
 
     except Exception as e:
+        success = False
         logger.error("Error handling message", user_id=user_id, error=str(e), exc_info=True)
 
         error_message = (
@@ -164,6 +168,8 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "Please try again or use /help for examples."
         )
         await update.message.reply_text(error_message)
+    finally:
+        log_query_to_csv(user_id, user.username, user_question, intent, success)
 
 
 async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
