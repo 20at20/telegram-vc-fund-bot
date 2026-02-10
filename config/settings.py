@@ -52,6 +52,11 @@ class Settings(BaseSettings):
     )
     log_level: str = Field(default="INFO", description="Logging level")
 
+    # Web App Configuration
+    web_password: str = Field(
+        default="changeme", description="Password for web chat UI"
+    )
+
     # MCP Configuration
     mcp_config_file: str = Field(
         default="mcp_config.json", description="Path to MCP configuration file"

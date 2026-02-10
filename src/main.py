@@ -6,6 +6,7 @@ import asyncio
 import signal
 import sys
 import os
+import uvicorn
 
 # Add project root to Python path (ensures imports work in all environments)
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -29,6 +30,7 @@ from src.bot.handlers import (
 )
 from src.bot.middleware import authorization_middleware, rate_limit_middleware
 from src.services.mcp_client import mcp_client
+from src.api.app import create_app
 from src.utils.logger import setup_logging, get_logger
 
 # Setup logging
@@ -144,24 +146,37 @@ class BotApplication:
 
 
 async def main():
-    """Main function to run the bot."""
+    """Main function to run the bot and the web API concurrently."""
     bot = BotApplication()
 
     # Setup signal handlers for graceful shutdown
     signal.signal(signal.SIGINT, bot.signal_handler)
     signal.signal(signal.SIGTERM, bot.signal_handler)
 
+    # Create FastAPI app and uvicorn server
+    api_app = create_app()
+    api_port = int(os.environ.get("PORT", 8000))
+    uvicorn_config = uvicorn.Config(
+        api_app, host="0.0.0.0", port=api_port, log_level="warning"
+    )
+    api_server = uvicorn.Server(uvicorn_config)
+
     try:
-        # Initialize and start the bot
         await bot.initialize()
-        await bot.start()
+
+        logger.info("Starting bot + web API...", api_port=api_port)
+
+        # Run Telegram bot and FastAPI web server concurrently
+        await asyncio.gather(
+            bot.start(),
+            api_server.serve(),
+        )
 
     except Exception as e:
-        logger.error("Fatal error in bot", error=str(e), exc_info=True)
+        logger.error("Fatal error", error=str(e), exc_info=True)
         sys.exit(1)
 
     finally:
-        # Ensure clean shutdown
         await bot.stop()
 
 
