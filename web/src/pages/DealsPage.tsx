@@ -214,12 +214,7 @@ export default function DealsPage({ token, onLogout, onBack }: Props) {
           ) : rows.length === 0 ? (
             <p className="text-center text-gray-400 py-12">No deals data available. Check that DEALS_SHEET_ID is configured.</p>
           ) : (
-            <table className="w-full text-sm border-collapse" style={{ tableLayout: 'fixed' }}>
-              <colgroup>
-                {columns.map(col => (
-                  <col key={col} style={{ width: isWrapColumn(col) ? '22%' : 'auto' }} />
-                ))}
-              </colgroup>
+            <table className="w-full text-sm border-collapse">
               <thead>
                 <tr>
                   {columns.map(col => (
@@ -244,12 +239,14 @@ export default function DealsPage({ token, onLogout, onBack }: Props) {
                   filteredRows.map((row, i) => (
                     <tr key={i} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                       {columns.map(col => (
-                        <td
-                          key={col}
-                          className="px-3 py-2 text-gray-700"
-                          style={isWrapColumn(col) ? { overflow: 'hidden', overflowWrap: 'break-word', wordBreak: 'break-word' } : { whiteSpace: 'nowrap' }}
-                        >
-                          {row[col] ?? ''}
+                        <td key={col} className="px-3 py-2 text-gray-700 whitespace-nowrap">
+                          {isWrapColumn(col) ? (
+                            <div style={{ maxWidth: 220, whiteSpace: 'normal', overflowWrap: 'break-word' }}>
+                              {row[col] ?? ''}
+                            </div>
+                          ) : (
+                            row[col] ?? ''
+                          )}
                         </td>
                       ))}
                     </tr>
