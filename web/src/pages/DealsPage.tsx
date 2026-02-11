@@ -100,20 +100,20 @@ export default function DealsPage({ token, onLogout, onBack }: Props) {
   // Identify text-heavy columns that should wrap instead of expanding
   const isWrapColumn = (col: string) => {
     const lower = col.toLowerCase()
-    return lower.includes('description') || lower.includes('why') || lower.includes('interesting')
+    return lower.includes('descri') || lower.includes('why') || lower.includes('interesting')
   }
 
   // Fixed column widths so table-layout: fixed distributes space correctly
   const colWidth = (col: string) => {
     const lower = col.toLowerCase()
-    if (lower.includes('why') || lower.includes('interesting')) return '24%'
-    if (lower.includes('description')) return '22%'
-    if (lower.includes('company')) return '12%'
-    if (lower.includes('industry')) return '10%'
-    if (lower.includes('round') && lower.includes('size')) return '8%'
-    if (lower.includes('round')) return '8%'
-    if (lower.includes('geo')) return '6%'
-    return '10%'
+    if (lower.includes('why') || lower.includes('interesting')) return '30%'
+    if (lower.includes('descri')) return '24%'
+    if (lower.includes('company')) return '10%'
+    if (lower.includes('industry')) return '9%'
+    if (lower.includes('round') && lower.includes('size')) return '7%'
+    if (lower.includes('round')) return '7%'
+    if (lower.includes('geo')) return '5%'
+    return '8%'
   }
 
   return (
