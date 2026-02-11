@@ -6,6 +6,13 @@ export default {
     extend: {
       animation: {
         'bounce-dot': 'bounce 1s infinite',
+        'ticker': 'ticker 60s linear infinite',
+      },
+      keyframes: {
+        ticker: {
+          '0%': { transform: 'translateX(0)' },
+          '100%': { transform: 'translateX(-50%)' },
+        },
       },
       colors: {
         brand: {

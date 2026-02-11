@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, FormEvent } from 'react'
 import MessageBubble from '../components/MessageBubble'
 import TypingIndicator from '../components/TypingIndicator'
+import PortfolioTicker from '../components/PortfolioTicker'
 
 const API = import.meta.env.VITE_API_URL || ''
 
@@ -131,6 +132,8 @@ export default function ChatPage({ token, onLogout, onBack }: Props) {
           </button>
         </form>
       </div>
+
+      <PortfolioTicker />
     </div>
   )
 }

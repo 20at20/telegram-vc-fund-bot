@@ -1,3 +1,5 @@
+import PortfolioTicker from '../components/PortfolioTicker'
+
 interface Agent {
   id: string
   name: string
@@ -99,6 +101,8 @@ export default function AgentSelectPage({ onSelect, onLogout }: Props) {
           ))}
         </div>
       </div>
+
+      <PortfolioTicker />
     </div>
   )
 }
