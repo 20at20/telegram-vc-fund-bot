@@ -2,6 +2,7 @@ import { useState } from 'react'
 import LoginPage from './pages/LoginPage'
 import AgentSelectPage from './pages/AgentSelectPage'
 import ChatPage from './pages/ChatPage'
+import DealsPage from './pages/DealsPage'
 
 export default function App() {
   const [token, setToken] = useState<string | null>(
@@ -20,7 +21,14 @@ export default function App() {
     setSelectedAgent(null)
   }
 
+  const handleBack = () => setSelectedAgent(null)
+
   if (!token) return <LoginPage onLogin={handleLogin} />
   if (!selectedAgent) return <AgentSelectPage onSelect={setSelectedAgent} onLogout={handleLogout} />
-  return <ChatPage token={token} onLogout={handleLogout} onBack={() => setSelectedAgent(null)} />
+
+  if (selectedAgent === 'deals') {
+    return <DealsPage token={token} onLogout={handleLogout} onBack={handleBack} />
+  }
+
+  return <ChatPage token={token} onLogout={handleLogout} onBack={handleBack} />
 }

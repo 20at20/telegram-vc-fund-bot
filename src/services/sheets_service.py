@@ -196,12 +196,49 @@ class SheetsService:
             logger.error("Error loading portfolio data", error=str(e))
             raise
 
+    @cache_with_ttl(ttl=300)  # 5-minute cache
+    async def get_deals_data(self) -> pd.DataFrame:
+        """
+        Fetch deals pipeline data from Google Sheets.
+        Automatically removes empty rows.
+
+        Returns:
+            DataFrame with deals data
+        """
+        try:
+            if not settings.deals_sheet_id:
+                logger.warning("No deals sheet ID configured")
+                return pd.DataFrame()
+
+            data = await self._fetch_sheet_data(
+                settings.deals_sheet_id, settings.deals_range
+            )
+
+            if not data:
+                logger.warning("No deals data found")
+                return pd.DataFrame()
+
+            # Convert to DataFrame (first row as headers)
+            df = pd.DataFrame(data[1:], columns=data[0])
+
+            # Remove empty rows
+            df = self._clean_empty_rows(df)
+
+            logger.info("Loaded deals data", rows=len(df))
+            return df
+
+        except Exception as e:
+            logger.error("Error loading deals data", error=str(e))
+            raise
+
     def clear_cache(self):
         """Clear all cached sheet data."""
         if hasattr(self.get_fund_metrics, 'clear_cache'):
             self.get_fund_metrics.clear_cache()
         if hasattr(self.get_portfolio_data, 'clear_cache'):
             self.get_portfolio_data.clear_cache()
+        if hasattr(self.get_deals_data, 'clear_cache'):
+            self.get_deals_data.clear_cache()
         logger.info("Cleared sheets cache")
 
 

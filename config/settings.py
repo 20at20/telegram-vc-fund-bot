@@ -40,6 +40,12 @@ class Settings(BaseSettings):
         default="Portfolio!A1:Z100", description="Cell range for portfolio"
     )
 
+    # Deals Pipeline Sheet Configuration
+    deals_sheet_id: str = Field(default="", description="Google Sheet ID for deals pipeline")
+    deals_range: str = Field(
+        default="Sheet1!A1:F200", description="Cell range for deals data"
+    )
+
     # For Railway deployment (optional)
     google_service_account_json: str | None = Field(
         default=None, description="Google service account JSON as string"
