@@ -103,6 +103,19 @@ export default function DealsPage({ token, onLogout, onBack }: Props) {
     return lower.includes('description') || lower.includes('why') || lower.includes('interesting')
   }
 
+  // Fixed column widths so table-layout: fixed distributes space correctly
+  const colWidth = (col: string) => {
+    const lower = col.toLowerCase()
+    if (lower.includes('why') || lower.includes('interesting')) return '24%'
+    if (lower.includes('description')) return '22%'
+    if (lower.includes('company')) return '12%'
+    if (lower.includes('industry')) return '10%'
+    if (lower.includes('round') && lower.includes('size')) return '8%'
+    if (lower.includes('round')) return '8%'
+    if (lower.includes('geo')) return '6%'
+    return '10%'
+  }
+
   return (
     <div className="min-h-screen bg-white flex flex-col">
       {/* Header */}
@@ -214,13 +227,18 @@ export default function DealsPage({ token, onLogout, onBack }: Props) {
           ) : rows.length === 0 ? (
             <p className="text-center text-gray-400 py-12">No deals data available. Check that DEALS_SHEET_ID is configured.</p>
           ) : (
-            <table className="w-full text-sm border-collapse">
+            <table className="w-full text-sm border-collapse" style={{ tableLayout: 'fixed' }}>
+              <colgroup>
+                {columns.map(col => (
+                  <col key={col} style={{ width: colWidth(col) }} />
+                ))}
+              </colgroup>
               <thead>
                 <tr>
                   {columns.map(col => (
                     <th
                       key={col}
-                      className="text-left px-3 py-2 font-bold uppercase tracking-wider text-xs text-gray-500 border-b-2 whitespace-nowrap"
+                      className="text-left px-3 py-2 font-bold uppercase tracking-wider text-xs text-gray-500 border-b-2 whitespace-nowrap overflow-hidden text-ellipsis"
                       style={{ borderBottomColor: '#1400FF' }}
                     >
                       {col}
@@ -239,14 +257,15 @@ export default function DealsPage({ token, onLogout, onBack }: Props) {
                   filteredRows.map((row, i) => (
                     <tr key={i} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                       {columns.map(col => (
-                        <td key={col} className="px-3 py-2 text-gray-700 whitespace-nowrap">
-                          {isWrapColumn(col) ? (
-                            <div style={{ maxWidth: 220, whiteSpace: 'normal', overflowWrap: 'break-word' }}>
-                              {row[col] ?? ''}
-                            </div>
-                          ) : (
-                            row[col] ?? ''
-                          )}
+                        <td
+                          key={col}
+                          className="px-3 py-2 text-gray-700"
+                          style={isWrapColumn(col)
+                            ? { overflowWrap: 'break-word', wordBreak: 'break-word' }
+                            : { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }
+                          }
+                        >
+                          {row[col] ?? ''}
                         </td>
                       ))}
                     </tr>
