@@ -2,8 +2,6 @@
 Google Sheets service for fetching fund and portfolio data.
 """
 
-import re
-
 import pandas as pd
 import gspread
 from google.oauth2.service_account import Credentials
@@ -14,9 +12,6 @@ from src.utils.cache import cache_with_ttl
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
-
-HYPERLINK_RE = re.compile(r'=HYPERLINK\(\s*"([^"]+)"\s*(?:,\s*"([^"]*)")?\s*\)', re.IGNORECASE)
-
 
 class SheetsService:
     """Service for accessing Google Sheets data."""
@@ -200,39 +195,10 @@ class SheetsService:
             logger.error("Error loading portfolio data", error=str(e))
             raise
 
-    def _fetch_company_links(self, sheet_id: str, range_name: str) -> dict:
-        """Extract HYPERLINK URLs from the Company (first) column.
-
-        Returns:
-            Dict mapping company display name to URL.
-        """
-        try:
-            spreadsheet = self.client.open_by_key(sheet_id)
-            sheet_name = range_name.split("!")[0] if "!" in range_name else range_name
-            worksheet = spreadsheet.worksheet(sheet_name)
-
-            formula_data = worksheet.get("A:A", value_render_option="FORMULA")
-
-            links = {}
-            if formula_data and len(formula_data) > 1:
-                for row in formula_data[1:]:
-                    if row:
-                        match = HYPERLINK_RE.search(str(row[0]))
-                        if match:
-                            url = match.group(1)
-                            display_text = match.group(2) or url
-                            links[display_text] = url
-
-            logger.info("Fetched company links", count=len(links))
-            return links
-        except Exception as e:
-            logger.warning("Could not fetch company hyperlinks", error=str(e))
-            return {}
-
     @cache_with_ttl(ttl=300)  # 5-minute cache
     async def get_deals_data(self) -> tuple:
         """
-        Fetch deals pipeline data and company hyperlinks from Google Sheets.
+        Fetch deals pipeline data from Google Sheets.
 
         Returns:
             Tuple of (DataFrame with deals data, dict of company name -> URL)
@@ -256,10 +222,17 @@ class SheetsService:
             # Remove empty rows
             df = self._clean_empty_rows(df)
 
-            # Fetch hyperlinks from Company column
-            links = self._fetch_company_links(
-                settings.deals_sheet_id, settings.deals_range
-            )
+            # Extract links from the "Link" column into a dict, then drop it from the DataFrame
+            links = {}
+            link_col = next((c for c in df.columns if c.lower() == 'link'), None)
+            company_col = next((c for c in df.columns if 'company' in c.lower()), None)
+            if link_col and company_col:
+                for _, row in df.iterrows():
+                    url = str(row[link_col]).strip()
+                    name = str(row[company_col]).strip()
+                    if url and name and url.startswith('http'):
+                        links[name] = url
+                df = df.drop(columns=[link_col])
 
             logger.info("Loaded deals data", rows=len(df), links=len(links))
             return df, links
