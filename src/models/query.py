@@ -3,7 +3,7 @@ Query intent models for parsing and understanding user questions.
 """
 
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -35,6 +35,7 @@ class QueryIntent(BaseModel):
     aggregation_field: Optional[str] = Field(None, description="Field to aggregate (investment, return, valuation, etc.)")
     show_all_details: bool = Field(default=False, description="Whether to show all columns or just key ones")
     ascending: bool = Field(default=False, description="Sort ascending (True for worst/lowest/bottom, False for top/best/highest)")
+    company_names: List[str] = Field(default_factory=list, description="Specific company names to filter by (from previous result context)")
     confidence: float = Field(default=1.0, description="Confidence in intent parsing")
 
     class Config:

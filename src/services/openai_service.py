@@ -24,6 +24,7 @@ class OpenAIService:
         self,
         user_question: str,
         conversation_history: Optional[List[Dict[str, str]]] = None,
+        previous_result_context: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Analyze user query to extract intent and parameters.
@@ -164,6 +165,22 @@ CRITICAL EXAMPLES - Geographic and Sector Filtering:
 "Companies without funding for 3+ years" → {"query_type": "portfolio_list", "filters": {"years_since_last_financing": "3"}}
 "Which companies had 3 years+ without new round?" → {"query_type": "portfolio_list", "filters": {"years_since_last_financing": "3"}}
 "Companies that haven't raised in 2+ years" → {"query_type": "portfolio_list", "filters": {"years_since_last_financing": "2"}}
+
+FOLLOW-UP / REFERENTIAL QUERIES:
+When the user refers to previously returned results using words like "these", "those", "them", "which of them", "from those", "among these", "of these companies", "from the list", etc., you MUST:
+1. Recognize this is a follow-up query referencing previous results
+2. If PREVIOUS RESULT CONTEXT is provided, extract the company names from it
+3. Include company_names in your JSON output as a list of company names to filter by
+4. Still extract the new filter/query the user wants (e.g., vertical, sector, country)
+
+Examples of referential follow-up queries:
+"Which of these is in healthtech?" → {"query_type": "portfolio_list", "filters": {"vertical": "healthtech"}, "company_names": ["Company A", "Company B", ...]}
+"Show me more details about those" → {"query_type": "portfolio_list", "filters": {}, "company_names": [...], "show_all_details": true}
+"Which of them are in France?" → {"query_type": "portfolio_list", "filters": {"country": "France"}, "company_names": [...]}
+"What's the average return of these companies?" → {"query_type": "portfolio_aggregation", "aggregation_type": "average", "aggregation_field": "return", "company_names": [...]}
+"Sort them by investment size" → {"query_type": "portfolio_ranking", "sort_by": "investment", "company_names": [...]}
+
+If no PREVIOUS RESULT CONTEXT is provided but the user uses referential language, treat it as a normal query without company_names filter.
 """,
                 }
             ]
@@ -172,8 +189,13 @@ CRITICAL EXAMPLES - Geographic and Sector Filtering:
             if conversation_history:
                 messages.extend(conversation_history[-4:])  # Last 4 messages for context
 
+            # Add previous result context if available
+            user_content = user_question
+            if previous_result_context:
+                user_content = f"PREVIOUS RESULT CONTEXT (companies from last query):\n{previous_result_context}\n\nUser question: {user_question}"
+
             # Add current question
-            messages.append({"role": "user", "content": user_question})
+            messages.append({"role": "user", "content": user_content})
 
             # Call OpenAI
             response = await self.client.chat.completions.create(

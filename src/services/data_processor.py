@@ -57,6 +57,48 @@ class DataProcessor:
 
         return df
 
+    def _filter_by_company_names(self, df: pd.DataFrame, company_names: list) -> pd.DataFrame:
+        """
+        Filter DataFrame to only include specific companies by name.
+        Uses normalized matching to handle spacing/capitalization differences.
+
+        Args:
+            df: Portfolio DataFrame
+            company_names: List of company names to keep
+
+        Returns:
+            Filtered DataFrame
+        """
+        if not company_names or df.empty:
+            return df
+
+        company_col = self._find_column(df, "company name")
+        if not company_col:
+            return df
+
+        # Normalize company names for matching
+        normalized_targets = {
+            name.lower().replace(" ", "").replace("-", "")
+            for name in company_names
+        }
+
+        normalized_col = (
+            df[company_col].astype(str)
+            .str.lower()
+            .str.replace(" ", "", regex=False)
+            .str.replace("-", "", regex=False)
+        )
+
+        mask = normalized_col.isin(normalized_targets)
+        result = df[mask]
+
+        logger.debug(
+            f"Filtered by company names: {len(result)}/{len(df)} matched",
+            target_names=company_names,
+        )
+
+        return result
+
     def _expand_vertical_filter(self, user_value: str) -> list:
         """
         Expand a vertical/sector filter to include synonyms.
@@ -81,7 +123,7 @@ class DataProcessor:
         return [user_value]
 
     def process_portfolio_aggregation(
-        self, df: pd.DataFrame, aggregation_type: str, aggregation_field: str, filters: Dict[str, Any] = None
+        self, df: pd.DataFrame, aggregation_type: str, aggregation_field: str, filters: Dict[str, Any] = None, company_names: list = None
     ) -> Dict[str, Any]:
         """
         Calculate aggregations across portfolio companies.
@@ -104,6 +146,10 @@ class DataProcessor:
 
             if df.empty:
                 return {"error": "No RV portfolio companies found"}
+
+            # Filter by specific company names (from previous result context)
+            if company_names:
+                df = self._filter_by_company_names(df, company_names)
 
             # Apply additional filters if provided
             if filters:
@@ -549,7 +595,7 @@ class DataProcessor:
         return df
 
     def process_portfolio_ranking(
-        self, df: pd.DataFrame, sort_by: str, limit: int = 5, show_all_details: bool = False, ascending: bool = False
+        self, df: pd.DataFrame, sort_by: str, limit: int = 5, show_all_details: bool = False, ascending: bool = False, company_names: list = None
     ) -> pd.DataFrame:
         """
         Rank portfolio companies by a criterion.
@@ -570,6 +616,10 @@ class DataProcessor:
 
             # Filter to RV portfolio only
             df = self._filter_rv_portfolio(df)
+
+            # Filter by specific company names (from previous result context)
+            if company_names:
+                df = self._filter_by_company_names(df, company_names)
 
             # Make a copy to avoid modifying original
             df = df.copy()
@@ -661,7 +711,7 @@ class DataProcessor:
             logger.error("Error processing portfolio ranking", error=str(e), exc_info=True)
             return df.head(limit)
 
-    def process_portfolio_list(self, df: pd.DataFrame, filters: Dict[str, Any], show_all_details: bool = False) -> pd.DataFrame:
+    def process_portfolio_list(self, df: pd.DataFrame, filters: Dict[str, Any], show_all_details: bool = False, company_names: list = None) -> pd.DataFrame:
         """
         Filter portfolio companies based on criteria.
 
@@ -681,6 +731,11 @@ class DataProcessor:
             # Filter to RV portfolio only
             result = self._filter_rv_portfolio(df.copy())
             logger.debug(f"After RV portfolio filter: {len(result)} companies remain")
+
+            # Filter by specific company names (from previous result context)
+            if company_names:
+                result = self._filter_by_company_names(result, company_names)
+                logger.debug(f"After company_names filter: {len(result)} companies remain")
 
             # Apply each filter
             for key, value in filters.items():
@@ -779,12 +834,14 @@ class DataProcessor:
             sort_by = intent.sort_by or "investment_amount"
             limit = intent.limit or 5
             return self.process_portfolio_ranking(
-                portfolio_df, sort_by, limit, show_all_details=intent.show_all_details, ascending=intent.ascending
+                portfolio_df, sort_by, limit, show_all_details=intent.show_all_details, ascending=intent.ascending,
+                company_names=intent.company_names or None,
             )
 
         elif intent.query_type == QueryType.PORTFOLIO_LIST:
             return self.process_portfolio_list(
-                portfolio_df, intent.filters, show_all_details=intent.show_all_details
+                portfolio_df, intent.filters, show_all_details=intent.show_all_details,
+                company_names=intent.company_names or None,
             )
 
         elif intent.query_type == QueryType.COMPANY_DETAIL:
@@ -807,7 +864,8 @@ class DataProcessor:
             if not intent.aggregation_type or not intent.aggregation_field:
                 return {"error": "Aggregation type and field must be specified"}
             return self.process_portfolio_aggregation(
-                portfolio_df, intent.aggregation_type, intent.aggregation_field, intent.filters
+                portfolio_df, intent.aggregation_type, intent.aggregation_field, intent.filters,
+                company_names=intent.company_names or None,
             )
 
         else:

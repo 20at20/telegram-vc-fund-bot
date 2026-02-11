@@ -83,6 +83,12 @@ export default function ChatPage({ token, onLogout, onBack }: Props) {
       content: m.content,
     }))
 
+    // Find the last assistant message with structured data (table results)
+    const lastAssistantWithData = [...messages].reverse().find(
+      m => m.role === 'assistant' && m.structuredData?.rows
+    )
+    const previousResult = lastAssistantWithData?.structuredData || null
+
     try {
       const res = await fetch(`${API}/api/chat`, {
         method: 'POST',
@@ -90,7 +96,7 @@ export default function ChatPage({ token, onLogout, onBack }: Props) {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ message: trimmed, conversation_history: history }),
+        body: JSON.stringify({ message: trimmed, conversation_history: history, previous_result: previousResult }),
       })
 
       if (res.status === 401) {

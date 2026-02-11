@@ -18,6 +18,7 @@ class QueryAnalyzer:
         self,
         user_question: str,
         conversation_history: Optional[List[Dict[str, str]]] = None,
+        previous_result_context: Optional[str] = None,
     ) -> QueryIntent:
         """
         Analyze a user question to extract structured intent.
@@ -32,7 +33,7 @@ class QueryAnalyzer:
         try:
             # Use OpenAI to analyze the query
             intent_data = await openai_service.analyze_query_intent(
-                user_question, conversation_history
+                user_question, conversation_history, previous_result_context
             )
 
             # Convert to QueryIntent model
@@ -50,6 +51,7 @@ class QueryAnalyzer:
                 aggregation_field=intent_data.get("aggregation_field"),
                 show_all_details=intent_data.get("show_all_details", False),
                 ascending=intent_data.get("ascending", False),
+                company_names=intent_data.get("company_names", []),
                 confidence=intent_data.get("confidence", 1.0),
             )
 

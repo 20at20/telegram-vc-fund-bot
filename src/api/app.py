@@ -37,6 +37,7 @@ class AuthResponse(BaseModel):
 class ChatRequest(BaseModel):
     message: str
     conversation_history: Optional[List[Dict[str, str]]] = []
+    previous_result: Optional[Dict[str, Any]] = None
 
 class ChatResponse(BaseModel):
     response: str
@@ -127,6 +128,31 @@ def _generate_clarification(user_message: str) -> Dict[str, Any]:
     }
 
 
+# ── Previous result context ───────────────────────────────────────────────────
+
+def _extract_previous_result_context(previous_result: Optional[Dict[str, Any]]) -> Optional[str]:
+    """Extract company names from previous structured result for follow-up context."""
+    if not previous_result:
+        return None
+
+    rows = previous_result.get("rows")
+    if not rows or not isinstance(rows, list):
+        return None
+
+    # Extract company names from the rows
+    company_names = []
+    for row in rows:
+        for key in ["Company Name", "company name", "Company", "Name", "company", "name"]:
+            if key in row and row[key]:
+                company_names.append(str(row[key]))
+                break
+
+    if not company_names:
+        return None
+
+    return "Companies: " + ", ".join(company_names)
+
+
 # ── Auth helper ────────────────────────────────────────────────────────────────
 
 def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
@@ -164,9 +190,12 @@ def create_app() -> FastAPI:
     @app.post("/api/chat", response_model=ChatResponse)
     async def chat(body: ChatRequest, _token: str = Depends(verify_token)):
         try:
+            # Build previous result context for follow-up queries
+            previous_result_context = _extract_previous_result_context(body.previous_result)
+
             # Analyze intent
             intent = await query_analyzer.analyze(
-                body.message, body.conversation_history or []
+                body.message, body.conversation_history or [], previous_result_context
             )
 
             # Handle ambiguous queries with clarification
@@ -200,5 +229,19 @@ def create_app() -> FastAPI:
         except Exception as e:
             logger.error("Error in /api/chat", error=str(e), exc_info=True)
             raise HTTPException(status_code=500, detail="Internal error processing your query")
+
+    @app.get("/api/deals")
+    async def deals(_token: str = Depends(verify_token)):
+        try:
+            df = await sheets_service.get_deals_data()
+            if df.empty:
+                return {"columns": [], "rows": []}
+            return {
+                "columns": list(df.columns),
+                "rows": df.fillna("").astype(object).to_dict(orient="records"),
+            }
+        except Exception as e:
+            logger.error("Error in /api/deals", error=str(e), exc_info=True)
+            raise HTTPException(status_code=500, detail="Error fetching deals data")
 
     return app
