@@ -247,7 +247,7 @@ export default function DealsPage({ token, onLogout, onBack }: Props) {
                         <td
                           key={col}
                           className="px-3 py-2 text-gray-700"
-                          style={isWrapColumn(col) ? { overflowWrap: 'break-word', wordBreak: 'break-word' } : { whiteSpace: 'nowrap' }}
+                          style={isWrapColumn(col) ? { overflow: 'hidden', overflowWrap: 'break-word', wordBreak: 'break-word' } : { whiteSpace: 'nowrap' }}
                         >
                           {row[col] ?? ''}
                         </td>
