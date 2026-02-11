@@ -3,6 +3,7 @@ import LoginPage from './pages/LoginPage'
 import AgentSelectPage from './pages/AgentSelectPage'
 import ChatPage from './pages/ChatPage'
 import DealsPage from './pages/DealsPage'
+import NewslettersPage from './pages/NewslettersPage'
 
 export default function App() {
   const [token, setToken] = useState<string | null>(
@@ -28,6 +29,10 @@ export default function App() {
 
   if (selectedAgent === 'deals') {
     return <DealsPage token={token} onLogout={handleLogout} onBack={handleBack} />
+  }
+
+  if (selectedAgent === 'newsletters') {
+    return <NewslettersPage onLogout={handleLogout} onBack={handleBack} />
   }
 
   return <ChatPage token={token} onLogout={handleLogout} onBack={handleBack} />
