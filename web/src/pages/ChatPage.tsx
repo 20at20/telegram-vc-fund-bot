@@ -2,18 +2,57 @@ import { useState, useRef, useEffect, FormEvent } from 'react'
 import MessageBubble from '../components/MessageBubble'
 import TypingIndicator from '../components/TypingIndicator'
 import PortfolioTicker from '../components/PortfolioTicker'
+import SuggestionChips from '../components/SuggestionChips'
 
 const API = import.meta.env.VITE_API_URL || ''
 
 interface Message {
   role: 'user' | 'assistant'
   content: string
+  queryType?: string
+  structuredData?: Record<string, any> | null
+  options?: Array<{ label: string; query: string }>
 }
 
 interface Props {
   token: string
   onLogout: () => void
   onBack: () => void
+}
+
+const WELCOME_SUGGESTIONS = [
+  { label: 'Current TVPI', query: 'What is our current TVPI?' },
+  { label: 'Top 5 by return', query: 'Top 5 companies by return' },
+  { label: 'Fintech companies', query: 'Show fintech companies' },
+  { label: 'Fund IRR', query: "What's the fund IRR?" },
+  { label: 'Recent investments', query: 'Show our 5 most recent investments' },
+]
+
+function getFollowUpSuggestions(queryType: string): Array<{ label: string; query: string }> {
+  switch (queryType) {
+    case 'fund_metric':
+      return [
+        { label: 'Show trend over time', query: 'Show me the trend over time' },
+        { label: 'Compare with DPI', query: 'Compare TVPI and DPI over time' },
+      ]
+    case 'portfolio_ranking':
+      return [
+        { label: 'Bottom performers', query: 'Show worst performing companies' },
+        { label: 'By investment size', query: 'Top 5 companies by investment size' },
+      ]
+    case 'portfolio_list':
+      return [
+        { label: 'Top by return', query: 'Top 5 companies by return' },
+        { label: 'Average check size', query: "What's the average check size?" },
+      ]
+    case 'time_series':
+      return [
+        { label: 'Current value', query: 'What is the current value?' },
+        { label: 'Compare metrics', query: 'Compare TVPI and DPI over time' },
+      ]
+    default:
+      return []
+  }
 }
 
 export default function ChatPage({ token, onLogout, onBack }: Props) {
@@ -31,17 +70,14 @@ export default function ChatPage({ token, onLogout, onBack }: Props) {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, loading])
 
-  const send = async (e: FormEvent) => {
-    e.preventDefault()
-    const text = input.trim()
-    if (!text || loading) return
+  const sendMessage = async (text: string) => {
+    const trimmed = text.trim()
+    if (!trimmed || loading) return
 
-    const userMsg: Message = { role: 'user', content: text }
-    setMessages(prev => [...prev, userMsg])
+    setMessages(prev => [...prev, { role: 'user', content: trimmed }])
     setInput('')
     setLoading(true)
 
-    // Build history for context (last 6 messages, OpenAI format)
     const history = messages.slice(-6).map(m => ({
       role: m.role,
       content: m.content,
@@ -54,7 +90,7 @@ export default function ChatPage({ token, onLogout, onBack }: Props) {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ message: text, conversation_history: history }),
+        body: JSON.stringify({ message: trimmed, conversation_history: history }),
       })
 
       if (res.status === 401) {
@@ -63,7 +99,13 @@ export default function ChatPage({ token, onLogout, onBack }: Props) {
       }
 
       const data = await res.json()
-      setMessages(prev => [...prev, { role: 'assistant', content: data.response }])
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: data.response,
+        queryType: data.query_type,
+        structuredData: data.structured_data || null,
+        options: data.options || null,
+      }])
     } catch {
       setMessages(prev => [
         ...prev,
@@ -73,6 +115,17 @@ export default function ChatPage({ token, onLogout, onBack }: Props) {
       setLoading(false)
     }
   }
+
+  const send = (e: FormEvent) => {
+    e.preventDefault()
+    sendMessage(input)
+  }
+
+  const lastMsg = messages[messages.length - 1]
+  const showWelcomeChips = messages.length === 1 && !loading
+  const followUpSuggestions = !loading && messages.length > 1 && lastMsg.role === 'assistant'
+    ? (lastMsg.options || getFollowUpSuggestions(lastMsg.queryType || ''))
+    : []
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -102,9 +155,32 @@ export default function ChatPage({ token, onLogout, onBack }: Props) {
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4 max-w-3xl w-full mx-auto">
         {messages.map((msg, i) => (
-          <MessageBubble key={i} role={msg.role} content={msg.content} />
+          <MessageBubble
+            key={i}
+            role={msg.role}
+            content={msg.content}
+            queryType={msg.queryType}
+            structuredData={msg.structuredData}
+          />
         ))}
         {loading && <TypingIndicator />}
+
+        {showWelcomeChips && (
+          <SuggestionChips
+            suggestions={WELCOME_SUGGESTIONS}
+            onSelect={sendMessage}
+            disabled={loading}
+          />
+        )}
+
+        {!showWelcomeChips && followUpSuggestions.length > 0 && (
+          <SuggestionChips
+            suggestions={followUpSuggestions}
+            onSelect={sendMessage}
+            disabled={loading}
+          />
+        )}
+
         <div ref={bottomRef} />
       </div>
 

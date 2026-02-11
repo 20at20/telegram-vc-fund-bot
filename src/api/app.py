@@ -5,6 +5,7 @@ FastAPI web app — exposes the bot's intelligence via HTTP for the React fronte
 import secrets
 from typing import List, Dict, Any, Optional
 
+import pandas as pd
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -40,6 +41,90 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     response: str
     query_type: str
+    structured_data: Optional[Dict[str, Any]] = None
+    options: Optional[List[Dict[str, str]]] = None
+
+
+# ── Data serialization ────────────────────────────────────────────────────────
+
+def _serialize_processed_data(data) -> Optional[Dict[str, Any]]:
+    """Convert processed data to JSON-safe dict for the web frontend."""
+    if data is None:
+        return None
+    if isinstance(data, pd.DataFrame):
+        if data.empty:
+            return {"type": "table", "columns": [], "rows": []}
+        return {
+            "type": "table",
+            "columns": list(data.columns),
+            "rows": data.fillna("").astype(object).to_dict(orient="records"),
+        }
+    if isinstance(data, dict):
+        if "error" in data:
+            return None
+        # Convert any DataFrame values nested inside the dict
+        result: Dict[str, Any] = {"type": "dict"}
+        for k, v in data.items():
+            if isinstance(v, pd.DataFrame):
+                result[k] = v.fillna("").astype(object).to_dict(orient="records")
+            else:
+                result[k] = v
+        return result
+    return None
+
+
+def _generate_clarification(user_message: str) -> Dict[str, Any]:
+    """Generate clarification response with options for ambiguous queries."""
+    message_lower = user_message.lower().strip()
+
+    metric_patterns = {
+        "tvpi": {
+            "response": "What would you like to know about TVPI?",
+            "options": [
+                {"label": "Current TVPI value", "query": "What is our current TVPI?"},
+                {"label": "TVPI trend over time", "query": "Show TVPI trend over time"},
+                {"label": "What is TVPI?", "query": "What does TVPI mean?"},
+            ],
+        },
+        "dpi": {
+            "response": "What would you like to know about DPI?",
+            "options": [
+                {"label": "Current DPI value", "query": "What is our current DPI?"},
+                {"label": "DPI trend over time", "query": "Show DPI trend over time"},
+                {"label": "What is DPI?", "query": "What does DPI mean?"},
+            ],
+        },
+        "irr": {
+            "response": "What would you like to know about IRR?",
+            "options": [
+                {"label": "Current IRR", "query": "What is our fund IRR?"},
+                {"label": "IRR over time", "query": "Show IRR trend over time"},
+                {"label": "What is IRR?", "query": "What does IRR mean?"},
+            ],
+        },
+        "portfolio": {
+            "response": "What would you like to know about the portfolio?",
+            "options": [
+                {"label": "All portfolio companies", "query": "Show all portfolio companies"},
+                {"label": "Top 5 by return", "query": "Top 5 companies by return"},
+                {"label": "Portfolio by sector", "query": "Show portfolio breakdown by sector"},
+            ],
+        },
+    }
+
+    for keyword, data in metric_patterns.items():
+        if keyword in message_lower:
+            return data
+
+    return {
+        "response": "I'm not sure what you're looking for. Try one of these:",
+        "options": [
+            {"label": "Fund performance", "query": "What is our current TVPI?"},
+            {"label": "Top companies", "query": "Top 5 companies by return"},
+            {"label": "Portfolio by sector", "query": "Show fintech companies"},
+            {"label": "Recent investments", "query": "Show our 5 most recent investments"},
+        ],
+    }
 
 
 # ── Auth helper ────────────────────────────────────────────────────────────────
@@ -84,6 +169,15 @@ def create_app() -> FastAPI:
                 body.message, body.conversation_history or []
             )
 
+            # Handle ambiguous queries with clarification
+            if intent.query_type == "unknown":
+                clarification = _generate_clarification(body.message)
+                return ChatResponse(
+                    response=clarification["response"],
+                    query_type="clarification",
+                    options=clarification["options"],
+                )
+
             # Fetch data and process
             if intent.query_type == "general_chat":
                 processed_data = None
@@ -100,6 +194,7 @@ def create_app() -> FastAPI:
             return ChatResponse(
                 response=response_text,
                 query_type=str(intent.query_type),
+                structured_data=_serialize_processed_data(processed_data),
             )
 
         except Exception as e:

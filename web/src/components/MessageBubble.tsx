@@ -1,12 +1,53 @@
 import ReactMarkdown from 'react-markdown'
+import { markdownComponents } from './markdownConfig'
+import TableView from './TableView'
+import MetricCard from './MetricCard'
+import TimeSeriesTable from './TimeSeriesTable'
 
 interface Props {
   role: 'user' | 'assistant'
   content: string
+  queryType?: string
+  structuredData?: Record<string, any> | null
 }
 
-export default function MessageBubble({ role, content }: Props) {
+export default function MessageBubble({ role, content, queryType, structuredData }: Props) {
   const isUser = role === 'user'
+
+  const renderContent = () => {
+    if (isUser) {
+      return <p className="whitespace-pre-wrap">{content}</p>
+    }
+
+    if (structuredData) {
+      switch (queryType) {
+        case 'portfolio_ranking':
+        case 'portfolio_list':
+        case 'company_detail':
+          if (structuredData.type === 'table') {
+            return <TableView data={structuredData} fallbackText={content} />
+          }
+          break
+        case 'fund_metric':
+        case 'portfolio_aggregation':
+          if (structuredData.type === 'dict') {
+            return <MetricCard data={structuredData} fallbackText={content} />
+          }
+          break
+        case 'time_series':
+          if (structuredData.type === 'dict' && structuredData.time_series) {
+            return <TimeSeriesTable data={structuredData} fallbackText={content} />
+          }
+          break
+      }
+    }
+
+    return (
+      <ReactMarkdown components={markdownComponents}>
+        {content}
+      </ReactMarkdown>
+    )
+  }
 
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
@@ -27,24 +68,7 @@ export default function MessageBubble({ role, content }: Props) {
         }`}
         style={isUser ? { backgroundColor: '#1400FF' } : { borderLeftColor: '#1400FF' }}
       >
-        {isUser ? (
-          <p className="whitespace-pre-wrap">{content}</p>
-        ) : (
-          <ReactMarkdown
-            components={{
-              p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
-              strong: ({ children }) => <strong className="font-bold text-gray-900">{children}</strong>,
-              code: ({ children }) => (
-                <code className="bg-gray-200 px-1.5 py-0.5 text-xs font-mono" style={{ color: '#1400FF' }}>{children}</code>
-              ),
-              ul: ({ children }) => <ul className="list-disc list-inside space-y-1 my-2">{children}</ul>,
-              ol: ({ children }) => <ol className="list-decimal list-inside space-y-1 my-2">{children}</ol>,
-              li: ({ children }) => <li className="text-gray-700">{children}</li>,
-            }}
-          >
-            {content}
-          </ReactMarkdown>
-        )}
+        {renderContent()}
       </div>
     </div>
   )
