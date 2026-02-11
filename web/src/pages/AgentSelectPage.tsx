@@ -69,7 +69,7 @@ export default function AgentSelectPage({ onSelect, onLogout }: Props) {
       {/* Content */}
       <div className="flex-1 flex flex-col items-center justify-center px-4 py-12">
         <h1 className="text-4xl font-black uppercase tracking-tight text-gray-900 mb-2">Choose an Assistant</h1>
-        <p className="text-gray-400 mb-10 text-center text-sm uppercase tracking-widest font-medium">Select an AI agent to start a conversation</p>
+        <p className="text-gray-400 mb-10 text-center text-sm uppercase tracking-widest font-medium">Select a tool</p>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-px bg-gray-100 border border-gray-100 w-full max-w-3xl">
           {agents.map(agent => (

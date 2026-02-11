@@ -17,6 +17,7 @@ export default function DealsPage({ token, onLogout, onBack }: Props) {
   const [search, setSearch] = useState('')
   const [industryFilter, setIndustryFilter] = useState('')
   const [roundFilter, setRoundFilter] = useState('')
+  const [geoFilter, setGeoFilter] = useState('')
 
   useEffect(() => {
     const fetchDeals = async () => {
@@ -49,7 +50,14 @@ export default function DealsPage({ token, onLogout, onBack }: Props) {
   }, [columns, rows])
 
   const rounds = useMemo(() => {
-    const col = columns.find(c => c.toLowerCase().includes('round'))
+    const col = columns.find(c => c.toLowerCase().includes('round') && !c.toLowerCase().includes('size'))
+    if (!col) return []
+    const values = new Set(rows.map(r => r[col]).filter(Boolean))
+    return Array.from(values).sort()
+  }, [columns, rows])
+
+  const geos = useMemo(() => {
+    const col = columns.find(c => c.toLowerCase().includes('geo'))
     if (!col) return []
     const values = new Set(rows.map(r => r[col]).filter(Boolean))
     return Array.from(values).sort()
@@ -75,16 +83,22 @@ export default function DealsPage({ token, onLogout, onBack }: Props) {
 
       // Round filter
       if (roundFilter) {
-        const col = columns.find(c => c.toLowerCase().includes('round'))
+        const col = columns.find(c => c.toLowerCase().includes('round') && !c.toLowerCase().includes('size'))
         if (col && row[col] !== roundFilter) return false
+      }
+
+      // Geo filter
+      if (geoFilter) {
+        const col = columns.find(c => c.toLowerCase().includes('geo'))
+        if (col && row[col] !== geoFilter) return false
       }
 
       return true
     })
-  }, [rows, columns, search, industryFilter, roundFilter])
+  }, [rows, columns, search, industryFilter, roundFilter, geoFilter])
 
-  // Identify wide columns (description, why interesting) for text wrapping
-  const isWideColumn = (col: string) => {
+  // Identify text-heavy columns that should wrap instead of expanding
+  const isWrapColumn = (col: string) => {
     const lower = col.toLowerCase()
     return lower.includes('description') || lower.includes('why') || lower.includes('interesting')
   }
@@ -161,6 +175,22 @@ export default function DealsPage({ token, onLogout, onBack }: Props) {
             </select>
           )}
 
+          {/* Geo filter */}
+          {geos.length > 0 && (
+            <select
+              value={geoFilter}
+              onChange={e => setGeoFilter(e.target.value)}
+              className="border-2 border-gray-200 px-3 py-2 text-sm text-gray-700 bg-white focus:outline-none transition"
+              onFocus={e => (e.target.style.borderColor = '#1400FF')}
+              onBlur={e => (e.target.style.borderColor = '#e5e7eb')}
+            >
+              <option value="">All Geos</option>
+              {geos.map(g => (
+                <option key={g} value={g}>{g}</option>
+              ))}
+            </select>
+          )}
+
           {/* Result count */}
           {!loading && (
             <span className="text-xs font-bold uppercase tracking-widest text-gray-400">
@@ -184,14 +214,14 @@ export default function DealsPage({ token, onLogout, onBack }: Props) {
           ) : rows.length === 0 ? (
             <p className="text-center text-gray-400 py-12">No deals data available. Check that DEALS_SHEET_ID is configured.</p>
           ) : (
-            <table className="w-full text-sm border-collapse">
+            <table className="w-full text-sm border-collapse table-fixed">
               <thead>
                 <tr>
                   {columns.map(col => (
                     <th
                       key={col}
                       className={`text-left px-3 py-2 font-bold uppercase tracking-wider text-xs text-gray-500 border-b-2 ${
-                        isWideColumn(col) ? 'min-w-[200px]' : 'whitespace-nowrap'
+                        isWrapColumn(col) ? 'max-w-[180px]' : 'whitespace-nowrap'
                       }`}
                       style={{ borderBottomColor: '#1400FF' }}
                     >
@@ -214,7 +244,7 @@ export default function DealsPage({ token, onLogout, onBack }: Props) {
                         <td
                           key={col}
                           className={`px-3 py-2 text-gray-700 ${
-                            isWideColumn(col) ? '' : 'whitespace-nowrap'
+                            isWrapColumn(col) ? 'max-w-[180px] break-words' : 'whitespace-nowrap'
                           }`}
                         >
                           {row[col] ?? ''}

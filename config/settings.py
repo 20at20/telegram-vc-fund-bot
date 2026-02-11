@@ -43,7 +43,7 @@ class Settings(BaseSettings):
     # Deals Pipeline Sheet Configuration
     deals_sheet_id: str = Field(default="", description="Google Sheet ID for deals pipeline")
     deals_range: str = Field(
-        default="Sheet1!A1:F200", description="Cell range for deals data"
+        default="Sheet1!A1:G200", description="Cell range for deals data"
     )
 
     # For Railway deployment (optional)

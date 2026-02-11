@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import PortfolioTicker from '../components/PortfolioTicker'
 
 interface Newsletter {
@@ -20,46 +19,6 @@ interface Props {
 }
 
 export default function NewslettersPage({ onLogout, onBack }: Props) {
-  const [selected, setSelected] = useState<Newsletter | null>(null)
-
-  // Iframe viewer
-  if (selected) {
-    return (
-      <div className="min-h-screen bg-white flex flex-col">
-        {/* Header bar */}
-        <header className="flex items-center justify-between px-4 py-3 border-b-2 border-gray-100 bg-white flex-shrink-0">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setSelected(null)}
-              className="text-gray-400 hover:text-gray-900 transition-colors"
-              title="Back to newsletters"
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-            <img src="/logo.png" alt="ROOSH" className="h-7" />
-            <span className="font-black uppercase tracking-widest text-sm text-gray-900">{selected.title}</span>
-          </div>
-          <button
-            onClick={onLogout}
-            className="text-xs font-bold uppercase tracking-widest text-gray-400 hover:text-gray-900 transition-colors"
-          >
-            Sign out
-          </button>
-        </header>
-
-        {/* Iframe */}
-        <iframe
-          src={selected.url}
-          className="flex-1 w-full border-none"
-          title={selected.title}
-        />
-      </div>
-    )
-  }
-
-  // Newsletter list
   return (
     <div className="min-h-screen bg-white flex flex-col">
       {/* Header */}
@@ -93,10 +52,12 @@ export default function NewslettersPage({ onLogout, onBack }: Props) {
 
           <div className="space-y-px bg-gray-100 border border-gray-100">
             {newsletters.map(nl => (
-              <button
+              <a
                 key={nl.id}
-                onClick={() => setSelected(nl)}
-                className="w-full text-left p-6 bg-white hover:bg-gray-50 transition-all duration-150 flex items-center justify-between gap-4"
+                href={nl.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full text-left p-6 bg-white hover:bg-gray-50 transition-all duration-150 flex items-center justify-between gap-4 no-underline"
                 onMouseEnter={e => (e.currentTarget.style.outline = '2px solid #1400FF')}
                 onMouseLeave={e => (e.currentTarget.style.outline = 'none')}
               >
@@ -115,10 +76,11 @@ export default function NewslettersPage({ onLogout, onBack }: Props) {
                     <p className="text-xs text-gray-400 uppercase tracking-widest font-medium mt-0.5">{nl.date}</p>
                   </div>
                 </div>
-                <svg className="w-5 h-5 text-gray-300 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                {/* External link icon */}
+                <svg className="w-4 h-4 text-gray-300 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                 </svg>
-              </button>
+              </a>
             ))}
           </div>
         </div>
