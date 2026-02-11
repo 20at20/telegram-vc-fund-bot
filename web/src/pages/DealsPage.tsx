@@ -18,6 +18,7 @@ export default function DealsPage({ token, onLogout, onBack }: Props) {
   const [industryFilter, setIndustryFilter] = useState('')
   const [roundFilter, setRoundFilter] = useState('')
   const [geoFilter, setGeoFilter] = useState('')
+  const [links, setLinks] = useState<Record<string, string>>({})
 
   useEffect(() => {
     const fetchDeals = async () => {
@@ -32,6 +33,7 @@ export default function DealsPage({ token, onLogout, onBack }: Props) {
         const data = await res.json()
         setColumns(data.columns || [])
         setRows(data.rows || [])
+        setLinks(data.links || {})
       } catch {
         setError('Failed to load deals data.')
       } finally {
@@ -96,6 +98,10 @@ export default function DealsPage({ token, onLogout, onBack }: Props) {
       return true
     })
   }, [rows, columns, search, industryFilter, roundFilter, geoFilter])
+
+  const companyCol = useMemo(() =>
+    columns.find(c => c.toLowerCase().includes('company')) || '',
+  [columns])
 
   // Identify text-heavy columns that should wrap instead of expanding
   const isWrapColumn = (col: string) => {
@@ -265,7 +271,19 @@ export default function DealsPage({ token, onLogout, onBack }: Props) {
                             : { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }
                           }
                         >
-                          {row[col] ?? ''}
+                          {col === companyCol && links[row[col]] ? (
+                            <a
+                              href={links[row[col]]}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="underline"
+                              style={{ color: '#1400FF' }}
+                            >
+                              {row[col]}
+                            </a>
+                          ) : (
+                            row[col] ?? ''
+                          )}
                         </td>
                       ))}
                     </tr>

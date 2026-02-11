@@ -233,12 +233,13 @@ def create_app() -> FastAPI:
     @app.get("/api/deals")
     async def deals(_token: str = Depends(verify_token)):
         try:
-            df = await sheets_service.get_deals_data()
+            df, links = await sheets_service.get_deals_data()
             if df.empty:
-                return {"columns": [], "rows": []}
+                return {"columns": [], "rows": [], "links": {}}
             return {
                 "columns": list(df.columns),
                 "rows": df.fillna("").astype(object).to_dict(orient="records"),
+                "links": links,
             }
         except Exception as e:
             logger.error("Error in /api/deals", error=str(e), exc_info=True)
