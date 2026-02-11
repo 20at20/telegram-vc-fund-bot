@@ -43,7 +43,6 @@ export default function TimeSeriesTable({ data, fallbackText }: Props) {
           </tbody>
         </table>
       </div>
-      <ReactMarkdown components={markdownComponents}>{fallbackText}</ReactMarkdown>
     </div>
   )
 }

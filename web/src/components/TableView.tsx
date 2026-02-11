@@ -27,7 +27,6 @@ export default function TableView({ data, fallbackText }: Props) {
             </div>
           ))}
         </div>
-        <ReactMarkdown components={markdownComponents}>{fallbackText}</ReactMarkdown>
       </div>
     )
   }
@@ -62,7 +61,6 @@ export default function TableView({ data, fallbackText }: Props) {
           </tbody>
         </table>
       </div>
-      <ReactMarkdown components={markdownComponents}>{fallbackText}</ReactMarkdown>
     </div>
   )
 }

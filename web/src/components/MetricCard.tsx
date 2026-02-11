@@ -22,7 +22,6 @@ export default function MetricCard({ data, fallbackText }: Props) {
         <p className="text-2xl font-black text-gray-900">{String(value)}</p>
         {subtitle && <p className="text-xs text-gray-400 mt-1">{subtitle}</p>}
       </div>
-      <ReactMarkdown components={markdownComponents}>{fallbackText}</ReactMarkdown>
     </div>
   )
 }
