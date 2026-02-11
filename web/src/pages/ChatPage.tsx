@@ -12,9 +12,10 @@ interface Message {
 interface Props {
   token: string
   onLogout: () => void
+  onBack: () => void
 }
 
-export default function ChatPage({ token, onLogout }: Props) {
+export default function ChatPage({ token, onLogout, onBack }: Props) {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
@@ -73,21 +74,25 @@ export default function ChatPage({ token, onLogout }: Props) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-950 to-slate-900 flex flex-col">
+    <div className="min-h-screen bg-white flex flex-col">
       {/* Header */}
-      <header className="flex items-center justify-between px-4 py-3 border-b border-slate-700/50 bg-slate-900/50 backdrop-blur">
+      <header className="flex items-center justify-between px-4 py-3 border-b-2 border-gray-100 bg-white">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
-            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+          <button
+            onClick={onBack}
+            className="text-gray-400 hover:text-gray-900 transition-colors"
+            title="Back to agents"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-          </div>
-          <span className="font-semibold text-white text-sm">RV Fund Assistant</span>
+          </button>
+          <img src="/logo.png" alt="ROOSH" className="h-7" />
+          <span className="font-black uppercase tracking-widest text-sm text-gray-900">RV Fund</span>
         </div>
         <button
           onClick={onLogout}
-          className="text-slate-400 hover:text-white text-sm transition-colors"
+          className="text-xs font-bold uppercase tracking-widest text-gray-400 hover:text-gray-900 transition-colors"
         >
           Sign out
         </button>
@@ -103,19 +108,22 @@ export default function ChatPage({ token, onLogout }: Props) {
       </div>
 
       {/* Input */}
-      <div className="border-t border-slate-700/50 bg-slate-900/50 backdrop-blur px-4 py-4">
-        <form onSubmit={send} className="max-w-3xl mx-auto flex gap-3">
+      <div className="border-t-2 border-gray-100 bg-white px-4 py-4">
+        <form onSubmit={send} className="max-w-3xl mx-auto flex gap-0">
           <input
             value={input}
             onChange={e => setInput(e.target.value)}
             placeholder="Ask about the fund or portfolio..."
             disabled={loading}
-            className="flex-1 bg-slate-800 border border-slate-600 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition disabled:opacity-50"
+            className="flex-1 border-2 border-gray-200 border-r-0 px-4 py-3 text-gray-900 placeholder-gray-300 focus:outline-none transition disabled:opacity-50"
+            onFocus={e => (e.target.style.borderColor = '#1400FF')}
+            onBlur={e => (e.target.style.borderColor = '#e5e7eb')}
           />
           <button
             type="submit"
             disabled={loading || !input.trim()}
-            className="bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-700 disabled:cursor-not-allowed text-white px-5 py-3 rounded-xl transition-colors shadow-lg shadow-indigo-500/20 flex items-center gap-2"
+            className="text-white px-5 py-3 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed flex items-center"
+            style={{ backgroundColor: '#1400FF' }}
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />

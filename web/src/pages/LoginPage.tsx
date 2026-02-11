@@ -35,46 +35,51 @@ export default function LoginPage({ onLogin }: Props) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-950 to-slate-900 flex items-center justify-center p-4">
-      <div className="w-full max-w-sm">
-        {/* Logo / Title */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-indigo-600 mb-4 shadow-lg shadow-indigo-500/30">
-            <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-            </svg>
+    <div className="min-h-screen bg-white flex">
+      {/* Left blue panel */}
+      <div className="hidden md:flex w-80 flex-shrink-0 flex-col justify-between p-10" style={{ backgroundColor: '#1400FF' }}>
+        <img src="/logo-transperent.png" alt="ROOSH" className="h-8" />
+        <p className="text-white/60 text-sm">Internal AI platform</p>
+      </div>
+
+      {/* Right form */}
+      <div className="flex-1 flex items-center justify-center p-8">
+        <div className="w-full max-w-sm">
+          {/* Mobile logo */}
+          <div className="md:hidden mb-8">
+            <img src="/logo.png" alt="ROOSH" className="h-8" />
           </div>
-          <h1 className="text-2xl font-semibold text-white">RV Fund Assistant</h1>
-          <p className="text-slate-400 text-sm mt-1">Enter your access password to continue</p>
+
+          <h1 className="text-3xl font-black uppercase tracking-tight text-gray-900 mb-1">Sign in</h1>
+          <p className="text-gray-500 text-sm mb-8">Enter your access password to continue</p>
+
+          <form onSubmit={submit} className="space-y-4">
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-widest text-gray-500 mb-2">Password</label>
+              <input
+                type="password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                placeholder="••••••••"
+                required
+                className="w-full border-2 border-gray-200 rounded-none px-4 py-3 text-gray-900 placeholder-gray-300 focus:outline-none transition"
+                onFocus={e => (e.target.style.borderColor = '#1400FF')}
+                onBlur={e => (e.target.style.borderColor = '#e5e7eb')}
+              />
+            </div>
+
+            {error && <p className="text-sm" style={{ color: '#E8321A' }}>{error}</p>}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full text-white font-black uppercase tracking-widest py-3 transition-opacity disabled:opacity-60"
+              style={{ backgroundColor: '#1400FF' }}
+            >
+              {loading ? 'Signing in...' : 'Sign in →'}
+            </button>
+          </form>
         </div>
-
-        {/* Card */}
-        <form onSubmit={submit} className="bg-slate-800/60 backdrop-blur border border-slate-700/50 rounded-2xl p-6 shadow-xl">
-          <div className="mb-4">
-            <label className="block text-sm text-slate-300 mb-2">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              placeholder="••••••••"
-              required
-              className="w-full bg-slate-900/70 border border-slate-600 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
-            />
-          </div>
-
-          {error && (
-            <p className="text-red-400 text-sm mb-4">{error}</p>
-          )}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:bg-indigo-800 disabled:cursor-not-allowed text-white font-medium py-3 rounded-xl transition-colors shadow-lg shadow-indigo-500/20"
-          >
-            {loading ? 'Signing in...' : 'Sign in'}
-          </button>
-        </form>
       </div>
     </div>
   )

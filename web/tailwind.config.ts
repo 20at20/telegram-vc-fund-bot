@@ -7,6 +7,13 @@ export default {
       animation: {
         'bounce-dot': 'bounce 1s infinite',
       },
+      colors: {
+        brand: {
+          blue: '#1400FF',
+          red: '#E8321A',
+          text: '#111111',
+        },
+      },
     },
   },
   plugins: [],
