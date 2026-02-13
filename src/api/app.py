@@ -260,4 +260,19 @@ def create_app() -> FastAPI:
             logger.error("Error in /api/experts", error=str(e), exc_info=True)
             raise HTTPException(status_code=500, detail="Error fetching experts data")
 
+    @app.get("/api/asks")
+    async def asks(_token: str = Depends(verify_token)):
+        try:
+            df, links = await sheets_service.get_asks_data()
+            if df.empty:
+                return {"columns": [], "rows": [], "links": {}}
+            return {
+                "columns": list(df.columns),
+                "rows": df.fillna("").astype(object).to_dict(orient="records"),
+                "links": links,
+            }
+        except Exception as e:
+            logger.error("Error in /api/asks", error=str(e), exc_info=True)
+            raise HTTPException(status_code=500, detail="Error fetching asks data")
+
     return app

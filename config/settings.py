@@ -52,6 +52,12 @@ class Settings(BaseSettings):
         default="Sheet1!A1:E200", description="Cell range for experts data"
     )
 
+    # Portfolio Asks Sheet Configuration
+    asks_sheet_id: str = Field(default="", description="Google Sheet ID for portfolio asks")
+    asks_range: str = Field(
+        default="Sheet1!A1:D200", description="Cell range for portfolio asks data"
+    )
+
     # For Railway deployment (optional)
     google_service_account_json: str | None = Field(
         default=None, description="Google service account JSON as string"
