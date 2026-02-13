@@ -58,6 +58,18 @@ const agents: Agent[] = [
     ready: true,
   },
   {
+    id: 'companies',
+    name: 'Companies',
+    description: 'Search 16k+ companies from Affinity — filter by industry, country, or stage.',
+    icon: (
+      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+      </svg>
+    ),
+    ready: true,
+  },
+  {
     id: 'newsletters',
     name: 'Newsletters',
     description: 'Monthly investor updates, market insights, and portfolio highlights.',
@@ -95,7 +107,7 @@ export default function AgentSelectPage({ onSelect, onLogout }: Props) {
         <h1 className="text-4xl font-black uppercase tracking-tight text-gray-900 mb-2">Choose an Assistant</h1>
         <p className="text-gray-400 mb-10 text-center text-sm uppercase tracking-widest font-medium">Select a tool</p>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-px bg-gray-100 border border-gray-100 w-full max-w-5xl">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-px bg-gray-100 border border-gray-100 w-full max-w-5xl">
           {agents.map(agent => (
             <button
               key={agent.id}
