@@ -242,7 +242,7 @@ export default function CompaniesPage({ token, onLogout, onBack }: Props) {
                   {columns.map(col => (
                     <th
                       key={col}
-                      className="text-left px-3 py-2 font-bold uppercase tracking-wider text-xs text-gray-500 border-b-2 whitespace-nowrap overflow-hidden text-ellipsis"
+                      className="text-left px-3 py-2 font-bold uppercase tracking-wider text-xs text-gray-500 border-b-2"
                       style={{ borderBottomColor: '#1400FF' }}
                     >
                       {col}
