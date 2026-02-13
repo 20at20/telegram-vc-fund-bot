@@ -52,6 +52,7 @@ class QueryAnalyzer:
                 show_all_details=intent_data.get("show_all_details", False),
                 ascending=intent_data.get("ascending", False),
                 company_names=intent_data.get("company_names", []),
+                specific_fields=intent_data.get("specific_fields", []),
                 confidence=intent_data.get("confidence", 1.0),
             )
 

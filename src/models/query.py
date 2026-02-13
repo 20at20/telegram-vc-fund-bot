@@ -36,6 +36,7 @@ class QueryIntent(BaseModel):
     show_all_details: bool = Field(default=False, description="Whether to show all columns or just key ones")
     ascending: bool = Field(default=False, description="Sort ascending (True for worst/lowest/bottom, False for top/best/highest)")
     company_names: List[str] = Field(default_factory=list, description="Specific company names to filter by (from previous result context)")
+    specific_fields: List[str] = Field(default_factory=list, description="Specific fields/columns the user is asking about (e.g., ['investment_date', 'return'])")
     confidence: float = Field(default=1.0, description="Confidence in intent parsing")
 
     class Config:

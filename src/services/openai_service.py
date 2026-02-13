@@ -106,6 +106,7 @@ Extract and return JSON with:
 - aggregation_field: field to aggregate on (investment, return, valuation, etc.) - for portfolio_aggregation queries
 - show_all_details: true if user explicitly asks for "more details", "full info", "everything", "all columns", etc.; false by default
 - ascending: true if user asks for "worst", "lowest", "bottom", "smallest"; false for "top", "best", "highest", "largest" (default: false)
+- specific_fields: ONLY for company_detail queries — list of field keywords the user is asking about. Available keywords: "investment" (amount invested), "return" (investment return multiplier), "valuation" (company valuation), "investment_date" (when we invested), "founded" (founding year), "stage" (investment stage), "vertical" (industry/sector), "hq" (headquarters location), "country", "status", "exit_date", "last_round_date", "years_since_last_financing". Leave EMPTY [] for broad questions like "tell me about X" or "show everything about X".
 
 Examples:
 "What's our current TVPI?" → {"query_type": "fund_metric", "metric": "TVPI", "time_period": "latest"}
@@ -140,6 +141,18 @@ Examples:
 "IRR history" → {"query_type": "time_series", "metric": "IRR"}
 "Can you elaborate on that?" → {"query_type": "general_chat"}
 "What does TVPI mean?" → {"query_type": "general_chat"}
+
+CRITICAL EXAMPLES - Company Detail with Specific Fields:
+"When did we invest in Leadbay?" → {"query_type": "company_detail", "company_name": "Leadbay", "specific_fields": ["investment_date"]}
+"How much we invested in Deel?" → {"query_type": "company_detail", "company_name": "Deel", "specific_fields": ["investment"]}
+"What is our return on Oura?" → {"query_type": "company_detail", "company_name": "Oura", "specific_fields": ["return"]}
+"What is our share in Oura?" → {"query_type": "company_detail", "company_name": "Oura", "specific_fields": ["investment", "valuation"]}
+"What's Deel's valuation?" → {"query_type": "company_detail", "company_name": "Deel", "specific_fields": ["valuation"]}
+"Where is Deel based?" → {"query_type": "company_detail", "company_name": "Deel", "specific_fields": ["hq", "country"]}
+"What stage did we invest in Leadbay?" → {"query_type": "company_detail", "company_name": "Leadbay", "specific_fields": ["stage"]}
+"What sector is Oura in?" → {"query_type": "company_detail", "company_name": "Oura", "specific_fields": ["vertical"]}
+"Tell me about Deel" → {"query_type": "company_detail", "company_name": "Deel", "specific_fields": []}
+"Show me everything about Deel" → {"query_type": "company_detail", "company_name": "Deel", "specific_fields": [], "show_all_details": true}
 
 CRITICAL EXAMPLES - Geographic and Sector Filtering:
 "What are french companies in portfolio?" → {"query_type": "portfolio_list", "filters": {"country": "France"}}
