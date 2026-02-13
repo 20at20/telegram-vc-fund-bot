@@ -98,23 +98,25 @@ export default function CompaniesPage({ token, onLogout, onBack }: Props) {
 
   const nameCol = columns.find(c => c.toLowerCase() === 'name') || ''
 
-  const colWidth = (col: string) => {
-    const lower = col.toLowerCase()
-    if (lower === 'name') return '160px'
-    if (lower.includes('descri')) return '400px'
-    if (lower === 'industry') return '160px'
-    if (lower.includes('country')) return '110px'
-    if (lower.includes('stage')) return '110px'
-    if (lower.includes('year')) return '70px'
-    if (lower.includes('employees')) return '80px'
-    if (lower.includes('investors')) return '350px'
-    if (lower.includes('last funding amount')) return '110px'
-    if (lower.includes('last funding date')) return '90px'
-    if (lower.includes('total funding')) return '110px'
-    if (lower.includes('people')) return '350px'
-    if (lower.includes('last contact')) return '90px'
-    return '100px'
+  const colWidths: Record<string, string> = {
+    'Name': '160px',
+    'Description': '400px',
+    'Industry': '160px',
+    'Location (Country)': '110px',
+    'Investment Stage': '110px',
+    'Year Founded': '70px',
+    'Number of Employees': '80px',
+    'Investors': '350px',
+    'Last Funding Amount (USD)': '110px',
+    'Last Funding Date': '90px',
+    'Total Funding Amount (USD)': '110px',
+    'People': '350px',
+    'Last Contact': '90px',
   }
+  const colWidth = (col: string) => colWidths[col] || '100px'
+  const tableWidth = columns.reduce((sum, col) => {
+    return sum + parseInt(colWidth(col))
+  }, 0)
 
   const isWrapColumn = (col: string) => {
     const lower = col.toLowerCase()
@@ -229,7 +231,7 @@ export default function CompaniesPage({ token, onLogout, onBack }: Props) {
           ) : rows.length === 0 ? (
             <p className="text-center text-gray-400 py-12">No companies match your search.</p>
           ) : (
-            <table className="text-sm border-collapse" style={{ tableLayout: 'fixed', minWidth: '2400px' }}>
+            <table className="text-sm border-collapse" style={{ tableLayout: 'fixed', width: `${tableWidth}px` }}>
               <colgroup>
                 {columns.map(col => (
                   <col key={col} style={{ width: colWidth(col) }} />
