@@ -15,6 +15,7 @@ from config.settings import settings
 from src.services.query_analyzer import query_analyzer
 from src.services.data_processor import data_processor
 from src.services.sheets_service import sheets_service
+from src.services.companies_service import companies_service
 from src.services.response_generator import response_generator
 from src.utils.logger import get_logger
 
@@ -274,5 +275,20 @@ def create_app() -> FastAPI:
         except Exception as e:
             logger.error("Error in /api/asks", error=str(e), exc_info=True)
             raise HTTPException(status_code=500, detail="Error fetching asks data")
+
+    @app.get("/api/companies")
+    async def companies(
+        _token: str = Depends(verify_token),
+        q: str = "",
+        industry: str = "",
+        country: str = "",
+        stage: str = "",
+        limit: int = 50,
+    ):
+        try:
+            return companies_service.search(q, industry, country, stage, limit)
+        except Exception as e:
+            logger.error("Error in /api/companies", error=str(e), exc_info=True)
+            raise HTTPException(status_code=500, detail="Error searching companies")
 
     return app

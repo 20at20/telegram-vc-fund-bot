@@ -4,6 +4,7 @@ import AgentSelectPage from './pages/AgentSelectPage'
 import ChatPage from './pages/ChatPage'
 import DealsPage from './pages/DealsPage'
 import AsksPage from './pages/AsksPage'
+import CompaniesPage from './pages/CompaniesPage'
 import ExpertsPage from './pages/ExpertsPage'
 import NewslettersPage from './pages/NewslettersPage'
 
@@ -39,6 +40,10 @@ export default function App() {
 
   if (selectedAgent === 'experts') {
     return <ExpertsPage token={token} onLogout={handleLogout} onBack={handleBack} />
+  }
+
+  if (selectedAgent === 'companies') {
+    return <CompaniesPage token={token} onLogout={handleLogout} onBack={handleBack} />
   }
 
   if (selectedAgent === 'newsletters') {
