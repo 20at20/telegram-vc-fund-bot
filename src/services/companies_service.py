@@ -94,8 +94,20 @@ class CompaniesService:
         self.df = df
 
         # --- Build filter options ---
+        # Split semicolon-separated industries into unique individual values
+        if "Industry" in df.columns:
+            all_industries = set()
+            for val in df["Industry"].unique():
+                for part in str(val).split(";"):
+                    part = part.strip()
+                    if part:
+                        all_industries.add(part)
+            industries_list = sorted(all_industries)
+        else:
+            industries_list = []
+
         self.filters = {
-            "industries": sorted(df["Industry"].unique().tolist()) if "Industry" in df.columns else [],
+            "industries": industries_list,
             "countries": sorted(df["Location (Country)"].unique().tolist()) if "Location (Country)" in df.columns else [],
             "stages": sorted(df["Investment Stage"].unique().tolist()) if "Investment Stage" in df.columns else [],
         }
@@ -130,9 +142,9 @@ class CompaniesService:
                     mask = mask | df[col].str.lower().str.contains(q, na=False)
             df = df[mask]
 
-        # Dropdown filters
+        # Dropdown filters (industry uses contains since values are semicolon-separated)
         if industry and "Industry" in df.columns:
-            df = df[df["Industry"] == industry]
+            df = df[df["Industry"].str.contains(industry, case=False, na=False)]
         if country and "Location (Country)" in df.columns:
             df = df[df["Location (Country)"] == country]
         if stage and "Investment Stage" in df.columns:

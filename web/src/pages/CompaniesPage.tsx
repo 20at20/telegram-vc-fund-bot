@@ -100,20 +100,20 @@ export default function CompaniesPage({ token, onLogout, onBack }: Props) {
 
   const colWidth = (col: string) => {
     const lower = col.toLowerCase()
-    if (lower === 'name') return '10%'
-    if (lower.includes('descri')) return '18%'
-    if (lower === 'industry') return '8%'
-    if (lower.includes('country')) return '7%'
-    if (lower.includes('stage')) return '7%'
-    if (lower.includes('year')) return '5%'
-    if (lower.includes('employees')) return '5%'
-    if (lower.includes('investors')) return '10%'
-    if (lower.includes('last funding amount')) return '6%'
-    if (lower.includes('last funding date')) return '5%'
-    if (lower.includes('total funding')) return '6%'
-    if (lower.includes('people')) return '6%'
-    if (lower.includes('last contact')) return '5%'
-    return '7%'
+    if (lower === 'name') return '180px'
+    if (lower.includes('descri')) return '300px'
+    if (lower === 'industry') return '160px'
+    if (lower.includes('country')) return '120px'
+    if (lower.includes('stage')) return '120px'
+    if (lower.includes('year')) return '80px'
+    if (lower.includes('employees')) return '90px'
+    if (lower.includes('investors')) return '200px'
+    if (lower.includes('last funding amount')) return '120px'
+    if (lower.includes('last funding date')) return '100px'
+    if (lower.includes('total funding')) return '120px'
+    if (lower.includes('people')) return '140px'
+    if (lower.includes('last contact')) return '100px'
+    return '120px'
   }
 
   const isWrapColumn = (col: string) => {
@@ -215,7 +215,7 @@ export default function CompaniesPage({ token, onLogout, onBack }: Props) {
 
       {/* Table */}
       <div className="flex-1 overflow-auto px-4 py-4">
-        <div className="max-w-[1400px] mx-auto">
+        <div className="overflow-x-auto">
           {loading ? (
             <div className="space-y-3">
               {[...Array(8)].map((_, i) => (
@@ -229,7 +229,7 @@ export default function CompaniesPage({ token, onLogout, onBack }: Props) {
           ) : rows.length === 0 ? (
             <p className="text-center text-gray-400 py-12">No companies match your search.</p>
           ) : (
-            <table className="w-full text-sm border-collapse" style={{ tableLayout: 'fixed' }}>
+            <table className="text-sm border-collapse" style={{ tableLayout: 'fixed', minWidth: '1900px' }}>
               <colgroup>
                 {columns.map(col => (
                   <col key={col} style={{ width: colWidth(col) }} />
