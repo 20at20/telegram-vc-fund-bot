@@ -241,6 +241,49 @@ class SheetsService:
             logger.error("Error loading deals data", error=str(e))
             raise
 
+    @cache_with_ttl(ttl=300)  # 5-minute cache
+    async def get_experts_data(self) -> tuple:
+        """
+        Fetch experts directory data from Google Sheets.
+
+        Returns:
+            Tuple of (DataFrame with experts data, dict of name -> LinkedIn URL)
+        """
+        try:
+            if not settings.experts_sheet_id:
+                logger.warning("No experts sheet ID configured")
+                return pd.DataFrame(), {}
+
+            data = await self._fetch_sheet_data(
+                settings.experts_sheet_id, settings.experts_range
+            )
+
+            if not data:
+                logger.warning("No experts data found")
+                return pd.DataFrame(), {}
+
+            df = pd.DataFrame(data[1:], columns=data[0])
+            df = self._clean_empty_rows(df)
+
+            # Extract LinkedIn URLs into a dict, then drop the column
+            links = {}
+            link_col = next((c for c in df.columns if 'linkedin' in c.lower()), None)
+            name_col = next((c for c in df.columns if 'name' in c.lower()), None)
+            if link_col and name_col:
+                for _, row in df.iterrows():
+                    url = str(row[link_col]).strip()
+                    name = str(row[name_col]).strip()
+                    if url and name and url.startswith('http'):
+                        links[name] = url
+                df = df.drop(columns=[link_col])
+
+            logger.info("Loaded experts data", rows=len(df), links=len(links))
+            return df, links
+
+        except Exception as e:
+            logger.error("Error loading experts data", error=str(e))
+            raise
+
     def clear_cache(self):
         """Clear all cached sheet data."""
         if hasattr(self.get_fund_metrics, 'clear_cache'):
@@ -249,6 +292,8 @@ class SheetsService:
             self.get_portfolio_data.clear_cache()
         if hasattr(self.get_deals_data, 'clear_cache'):
             self.get_deals_data.clear_cache()
+        if hasattr(self.get_experts_data, 'clear_cache'):
+            self.get_experts_data.clear_cache()
         logger.info("Cleared sheets cache")
 
 

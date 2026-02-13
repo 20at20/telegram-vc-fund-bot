@@ -9,21 +9,20 @@ interface Props {
   onBack: () => void
 }
 
-export default function DealsPage({ token, onLogout, onBack }: Props) {
+export default function ExpertsPage({ token, onLogout, onBack }: Props) {
   const [columns, setColumns] = useState<string[]>([])
   const [rows, setRows] = useState<Record<string, string>[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [search, setSearch] = useState('')
-  const [industryFilter, setIndustryFilter] = useState('')
-  const [roundFilter, setRoundFilter] = useState('')
-  const [geoFilter, setGeoFilter] = useState('')
+  const [expertiseFilter, setExpertiseFilter] = useState('')
+  const [nationalityFilter, setNationalityFilter] = useState('')
   const [links, setLinks] = useState<Record<string, string>>({})
 
   useEffect(() => {
-    const fetchDeals = async () => {
+    const fetchExperts = async () => {
       try {
-        const res = await fetch(`${API}/api/deals`, {
+        const res = await fetch(`${API}/api/experts`, {
           headers: { Authorization: `Bearer ${token}` },
         })
         if (res.status === 401) {
@@ -34,50 +33,43 @@ export default function DealsPage({ token, onLogout, onBack }: Props) {
         const allCols: string[] = data.columns || []
         const allRows: Record<string, string>[] = data.rows || []
 
-        // Extract links from the "Link" column (if backend hasn't stripped it)
-        const linkCol = allCols.find(c => c.toLowerCase() === 'link')
-        const compCol = allCols.find(c => c.toLowerCase().includes('company'))
+        // Extract links from the "Linkedin" column (if backend hasn't stripped it)
+        const linkCol = allCols.find(c => c.toLowerCase().includes('linkedin'))
+        const nameCol = allCols.find(c => c.toLowerCase().includes('name'))
         let extractedLinks: Record<string, string> = data.links || {}
-        if (linkCol && compCol) {
+        if (linkCol && nameCol) {
           for (const row of allRows) {
             const url = (row[linkCol] || '').trim()
-            const name = (row[compCol] || '').trim()
+            const name = (row[nameCol] || '').trim()
             if (url && name && url.startsWith('http')) {
               extractedLinks[name] = url
             }
           }
         }
 
-        // Hide the Link column from display
-        setColumns(allCols.filter(c => c.toLowerCase() !== 'link'))
+        // Hide the Linkedin column from display
+        setColumns(allCols.filter(c => !c.toLowerCase().includes('linkedin')))
         setRows(allRows)
         setLinks(extractedLinks)
       } catch {
-        setError('Failed to load deals data.')
+        setError('Failed to load experts data.')
       } finally {
         setLoading(false)
       }
     }
-    fetchDeals()
+    fetchExperts()
   }, [token, onLogout])
 
   // Extract unique values for filter dropdowns
-  const industries = useMemo(() => {
-    const col = columns.find(c => c.toLowerCase().includes('industry'))
+  const expertises = useMemo(() => {
+    const col = columns.find(c => c.toLowerCase().includes('expertise') || c.toLowerCase().includes('area'))
     if (!col) return []
     const values = new Set(rows.map(r => r[col]).filter(Boolean))
     return Array.from(values).sort()
   }, [columns, rows])
 
-  const rounds = useMemo(() => {
-    const col = columns.find(c => c.toLowerCase().includes('round') && !c.toLowerCase().includes('size'))
-    if (!col) return []
-    const values = new Set(rows.map(r => r[col]).filter(Boolean))
-    return Array.from(values).sort()
-  }, [columns, rows])
-
-  const geos = useMemo(() => {
-    const col = columns.find(c => c.toLowerCase().includes('geo'))
+  const nationalities = useMemo(() => {
+    const col = columns.find(c => c.toLowerCase().includes('national'))
     if (!col) return []
     const values = new Set(rows.map(r => r[col]).filter(Boolean))
     return Array.from(values).sort()
@@ -86,7 +78,6 @@ export default function DealsPage({ token, onLogout, onBack }: Props) {
   // Filter rows
   const filteredRows = useMemo(() => {
     return rows.filter(row => {
-      // Search filter — match across all columns
       if (search) {
         const q = search.toLowerCase()
         const matches = columns.some(col =>
@@ -95,49 +86,36 @@ export default function DealsPage({ token, onLogout, onBack }: Props) {
         if (!matches) return false
       }
 
-      // Industry filter
-      if (industryFilter) {
-        const col = columns.find(c => c.toLowerCase().includes('industry'))
-        if (col && row[col] !== industryFilter) return false
+      if (expertiseFilter) {
+        const col = columns.find(c => c.toLowerCase().includes('expertise') || c.toLowerCase().includes('area'))
+        if (col && row[col] !== expertiseFilter) return false
       }
 
-      // Round filter
-      if (roundFilter) {
-        const col = columns.find(c => c.toLowerCase().includes('round') && !c.toLowerCase().includes('size'))
-        if (col && row[col] !== roundFilter) return false
-      }
-
-      // Geo filter
-      if (geoFilter) {
-        const col = columns.find(c => c.toLowerCase().includes('geo'))
-        if (col && row[col] !== geoFilter) return false
+      if (nationalityFilter) {
+        const col = columns.find(c => c.toLowerCase().includes('national'))
+        if (col && row[col] !== nationalityFilter) return false
       }
 
       return true
     })
-  }, [rows, columns, search, industryFilter, roundFilter, geoFilter])
+  }, [rows, columns, search, expertiseFilter, nationalityFilter])
 
-  const companyCol = useMemo(() =>
-    columns.find(c => c.toLowerCase().includes('company')) || '',
+  const nameCol = useMemo(() =>
+    columns.find(c => c.toLowerCase().includes('name')) || '',
   [columns])
 
-  // Identify text-heavy columns that should wrap instead of expanding
-  const isWrapColumn = (col: string) => {
-    const lower = col.toLowerCase()
-    return lower.includes('descri') || lower.includes('why') || lower.includes('interesting')
-  }
-
-  // Fixed column widths so table-layout: fixed distributes space correctly
   const colWidth = (col: string) => {
     const lower = col.toLowerCase()
-    if (lower.includes('why') || lower.includes('interesting')) return '30%'
-    if (lower.includes('descri')) return '24%'
-    if (lower.includes('company')) return '10%'
-    if (lower.includes('industry')) return '9%'
-    if (lower.includes('round') && lower.includes('size')) return '7%'
-    if (lower.includes('round')) return '7%'
-    if (lower.includes('geo')) return '5%'
-    return '8%'
+    if (lower.includes('name')) return '18%'
+    if (lower.includes('national')) return '12%'
+    if (lower.includes('company')) return '25%'
+    if (lower.includes('expertise') || lower.includes('area')) return '45%'
+    return '20%'
+  }
+
+  const isWrapColumn = (col: string) => {
+    const lower = col.toLowerCase()
+    return lower.includes('expertise') || lower.includes('area') || lower.includes('company')
   }
 
   return (
@@ -155,7 +133,7 @@ export default function DealsPage({ token, onLogout, onBack }: Props) {
             </svg>
           </button>
           <img src="/logo.png" alt="ROOSH" className="h-7" />
-          <span className="font-black uppercase tracking-widest text-sm text-gray-900">Deals on the Table</span>
+          <span className="font-black uppercase tracking-widest text-sm text-gray-900">Experts</span>
         </div>
         <button
           onClick={onLogout}
@@ -168,70 +146,50 @@ export default function DealsPage({ token, onLogout, onBack }: Props) {
       {/* Filters */}
       <div className="px-4 py-4 border-b border-gray-100 bg-white">
         <div className="max-w-6xl mx-auto flex flex-wrap items-center gap-3">
-          {/* Search */}
           <div className="flex-1 min-w-[200px]">
             <input
               value={search}
               onChange={e => setSearch(e.target.value)}
-              placeholder="Search deals..."
+              placeholder="Search experts..."
               className="w-full border-2 border-gray-200 px-3 py-2 text-sm text-gray-900 placeholder-gray-300 focus:outline-none transition"
               onFocus={e => (e.target.style.borderColor = '#1400FF')}
               onBlur={e => (e.target.style.borderColor = '#e5e7eb')}
             />
           </div>
 
-          {/* Industry filter */}
-          {industries.length > 0 && (
+          {expertises.length > 0 && (
             <select
-              value={industryFilter}
-              onChange={e => setIndustryFilter(e.target.value)}
+              value={expertiseFilter}
+              onChange={e => setExpertiseFilter(e.target.value)}
               className="border-2 border-gray-200 px-3 py-2 text-sm text-gray-700 bg-white focus:outline-none transition"
               onFocus={e => (e.target.style.borderColor = '#1400FF')}
               onBlur={e => (e.target.style.borderColor = '#e5e7eb')}
             >
-              <option value="">All Industries</option>
-              {industries.map(ind => (
-                <option key={ind} value={ind}>{ind}</option>
+              <option value="">All Expertises</option>
+              {expertises.map(e => (
+                <option key={e} value={e}>{e}</option>
               ))}
             </select>
           )}
 
-          {/* Round filter */}
-          {rounds.length > 0 && (
+          {nationalities.length > 0 && (
             <select
-              value={roundFilter}
-              onChange={e => setRoundFilter(e.target.value)}
+              value={nationalityFilter}
+              onChange={e => setNationalityFilter(e.target.value)}
               className="border-2 border-gray-200 px-3 py-2 text-sm text-gray-700 bg-white focus:outline-none transition"
               onFocus={e => (e.target.style.borderColor = '#1400FF')}
               onBlur={e => (e.target.style.borderColor = '#e5e7eb')}
             >
-              <option value="">All Rounds</option>
-              {rounds.map(r => (
-                <option key={r} value={r}>{r}</option>
+              <option value="">All Nationalities</option>
+              {nationalities.map(n => (
+                <option key={n} value={n}>{n}</option>
               ))}
             </select>
           )}
 
-          {/* Geo filter */}
-          {geos.length > 0 && (
-            <select
-              value={geoFilter}
-              onChange={e => setGeoFilter(e.target.value)}
-              className="border-2 border-gray-200 px-3 py-2 text-sm text-gray-700 bg-white focus:outline-none transition"
-              onFocus={e => (e.target.style.borderColor = '#1400FF')}
-              onBlur={e => (e.target.style.borderColor = '#e5e7eb')}
-            >
-              <option value="">All Geos</option>
-              {geos.map(g => (
-                <option key={g} value={g}>{g}</option>
-              ))}
-            </select>
-          )}
-
-          {/* Result count */}
           {!loading && (
             <span className="text-xs font-bold uppercase tracking-widest text-gray-400">
-              {filteredRows.length} deal{filteredRows.length !== 1 ? 's' : ''}
+              {filteredRows.length} expert{filteredRows.length !== 1 ? 's' : ''}
             </span>
           )}
         </div>
@@ -249,7 +207,7 @@ export default function DealsPage({ token, onLogout, onBack }: Props) {
           ) : error ? (
             <p className="text-center text-gray-400 py-12">{error}</p>
           ) : rows.length === 0 ? (
-            <p className="text-center text-gray-400 py-12">No deals data available. Check that DEALS_SHEET_ID is configured.</p>
+            <p className="text-center text-gray-400 py-12">No experts data available. Check that EXPERTS_SHEET_ID is configured.</p>
           ) : (
             <table className="w-full text-sm border-collapse" style={{ tableLayout: 'fixed' }}>
               <colgroup>
@@ -274,7 +232,7 @@ export default function DealsPage({ token, onLogout, onBack }: Props) {
                 {filteredRows.length === 0 ? (
                   <tr>
                     <td colSpan={columns.length} className="text-center text-gray-400 py-8">
-                      No deals match your filters.
+                      No experts match your filters.
                     </td>
                   </tr>
                 ) : (
@@ -289,7 +247,7 @@ export default function DealsPage({ token, onLogout, onBack }: Props) {
                             : { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }
                           }
                         >
-                          {col === companyCol && links[(row[col] || '').trim()] ? (
+                          {col === nameCol && links[(row[col] || '').trim()] ? (
                             <a
                               href={links[(row[col] || '').trim()]}
                               target="_blank"

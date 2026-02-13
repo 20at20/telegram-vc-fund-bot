@@ -46,6 +46,12 @@ class Settings(BaseSettings):
         default="Sheet1!A1:H200", description="Cell range for deals data"
     )
 
+    # Experts Sheet Configuration
+    experts_sheet_id: str = Field(default="", description="Google Sheet ID for experts directory")
+    experts_range: str = Field(
+        default="Sheet1!A1:E200", description="Cell range for experts data"
+    )
+
     # For Railway deployment (optional)
     google_service_account_json: str | None = Field(
         default=None, description="Google service account JSON as string"
