@@ -99,19 +99,19 @@ export default function CompaniesPage({ token, onLogout, onBack }: Props) {
   const nameCol = columns.find(c => c.toLowerCase() === 'name') || ''
 
   const colWidths: Record<string, string> = {
-    'Name': '160px',
+    'Name': '180px',
     'Description': '400px',
-    'Industry': '160px',
-    'Location (Country)': '110px',
-    'Investment Stage': '110px',
-    'Year Founded': '70px',
-    'Number of Employees': '80px',
+    'Industry': '200px',
+    'Location (Country)': '150px',
+    'Investment Stage': '150px',
+    'Year Founded': '100px',
+    'Number of Employees': '140px',
     'Investors': '350px',
-    'Last Funding Amount (USD)': '110px',
-    'Last Funding Date': '90px',
-    'Total Funding Amount (USD)': '110px',
+    'Last Funding Amount (USD)': '160px',
+    'Last Funding Date': '120px',
+    'Total Funding Amount (USD)': '160px',
     'People': '350px',
-    'Last Contact': '90px',
+    'Last Contact': '120px',
   }
   const colWidth = (col: string) => colWidths[col] || '100px'
   const tableWidth = columns.reduce((sum, col) => {
