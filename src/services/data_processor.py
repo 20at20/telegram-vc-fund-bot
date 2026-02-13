@@ -847,12 +847,20 @@ class DataProcessor:
         elif intent.query_type == QueryType.COMPANY_DETAIL:
             if intent.company_name:
                 filters = {"company_name": intent.company_name}
-                # Always send all columns to GPT, let GPT filter what to show in response
-                # This ensures GPT has access to any field the user might be asking about
-                # (e.g., investment date, stage, description, etc.)
-                return self.process_portfolio_list(
+                result = self.process_portfolio_list(
                     portfolio_df, filters, show_all_details=True
                 )
+                # Narrow columns if user asked about specific fields
+                if intent.specific_fields and isinstance(result, pd.DataFrame) and not result.empty:
+                    company_col = self._find_column(result, "company name")
+                    selected = [company_col] if company_col else []
+                    for field in intent.specific_fields:
+                        col = self._find_column(result, field)
+                        if col and col not in selected:
+                            selected.append(col)
+                    if selected:
+                        result = result[selected]
+                return result
             return {"error": "No company name specified"}
 
         elif intent.query_type == QueryType.TIME_SERIES:
