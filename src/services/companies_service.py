@@ -26,7 +26,7 @@ DISPLAY_COLUMNS = [
 ]
 
 # Columns searched by the text query
-SEARCH_COLUMNS = ["Name", "Description", "Industry", "Investors"]
+SEARCH_COLUMNS = ["Name", "Description", "Industry", "Investors", "People"]
 
 
 class CompaniesService:
@@ -129,8 +129,9 @@ class CompaniesService:
         country: str = "",
         stage: str = "",
         limit: int = 50,
+        offset: int = 0,
     ) -> dict:
-        """Search and filter companies, returning up to `limit` rows."""
+        """Search and filter companies, returning up to `limit` rows starting at `offset`."""
         df = self.df
 
         # Text search across key columns
@@ -151,7 +152,7 @@ class CompaniesService:
             df = df[df["Investment Stage"] == stage]
 
         total = len(df)
-        df = df.head(limit)
+        df = df.iloc[offset:offset + limit]
 
         return {
             "columns": list(df.columns),
