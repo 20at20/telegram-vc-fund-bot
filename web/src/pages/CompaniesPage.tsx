@@ -29,9 +29,11 @@ export default function CompaniesPage({ token, onLogout, onBack }: Props) {
   const [stageFilter, setStageFilter] = useState('')
   const [filters, setFilters] = useState<Filters>({ industries: [], countries: [], stages: [] })
   const [hasSearched, setHasSearched] = useState(false)
+  const [page, setPage] = useState(0)
+  const pageSize = 50
   const debounceRef = useRef<ReturnType<typeof setTimeout>>()
 
-  const fetchCompanies = useCallback(async (q: string, industry: string, country: string, stage: string) => {
+  const fetchCompanies = useCallback(async (q: string, industry: string, country: string, stage: string, offset: number) => {
     setLoading(true)
     setError('')
     try {
@@ -40,7 +42,8 @@ export default function CompaniesPage({ token, onLogout, onBack }: Props) {
       if (industry) params.set('industry', industry)
       if (country) params.set('country', country)
       if (stage) params.set('stage', stage)
-      params.set('limit', '50')
+      params.set('limit', String(pageSize))
+      if (offset) params.set('offset', String(offset))
 
       const res = await fetch(`${API}/api/companies?${params}`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -64,6 +67,11 @@ export default function CompaniesPage({ token, onLogout, onBack }: Props) {
     }
   }, [token, onLogout])
 
+  // Reset to first page when filters change
+  useEffect(() => {
+    setPage(0)
+  }, [search, industryFilter, countryFilter, stageFilter])
+
   // Debounced search
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
@@ -74,11 +82,11 @@ export default function CompaniesPage({ token, onLogout, onBack }: Props) {
     }
 
     debounceRef.current = setTimeout(() => {
-      fetchCompanies(search, industryFilter, countryFilter, stageFilter)
+      fetchCompanies(search, industryFilter, countryFilter, stageFilter, page * pageSize)
     }, 300)
 
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
-  }, [search, industryFilter, countryFilter, stageFilter, fetchCompanies, hasSearched])
+  }, [search, industryFilter, countryFilter, stageFilter, page, fetchCompanies, hasSearched])
 
   // Load filters on mount (empty search to get filter values)
   useEffect(() => {
@@ -209,7 +217,7 @@ export default function CompaniesPage({ token, onLogout, onBack }: Props) {
 
           {hasSearched && !loading && (
             <span className="text-xs font-bold uppercase tracking-widest text-gray-400">
-              {rows.length} of {total}
+              {page * pageSize + 1}–{Math.min((page + 1) * pageSize, total)} of {total}
             </span>
           )}
         </div>
@@ -301,6 +309,29 @@ export default function CompaniesPage({ token, onLogout, onBack }: Props) {
             </table>
           )}
         </div>
+
+        {/* Pagination */}
+        {hasSearched && total > pageSize && (
+          <div className="flex items-center justify-center gap-4 py-4">
+            <button
+              onClick={() => setPage(p => p - 1)}
+              disabled={page === 0}
+              className="px-4 py-2 text-xs font-bold uppercase tracking-widest border-2 border-gray-200 text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed hover:border-[#1400FF] hover:text-[#1400FF] transition"
+            >
+              Previous
+            </button>
+            <span className="text-xs font-bold uppercase tracking-widest text-gray-400">
+              Page {page + 1} of {Math.ceil(total / pageSize)}
+            </span>
+            <button
+              onClick={() => setPage(p => p + 1)}
+              disabled={(page + 1) * pageSize >= total}
+              className="px-4 py-2 text-xs font-bold uppercase tracking-widest border-2 border-gray-200 text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed hover:border-[#1400FF] hover:text-[#1400FF] transition"
+            >
+              Next
+            </button>
+          </div>
+        )}
       </div>
 
       <PortfolioTicker />
