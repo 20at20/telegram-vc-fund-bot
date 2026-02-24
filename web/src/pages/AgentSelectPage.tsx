@@ -11,7 +11,7 @@ interface Agent {
 const agents: Agent[] = [
   {
     id: 'rv-fund',
-    name: 'RV Fund',
+    name: 'RV Fund Data AI Assistant',
     description: 'Portfolio performance, fund metrics (TVPI, IRR, DPI), company details, rankings and sector breakdowns.',
     icon: (
       <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -59,8 +59,8 @@ const agents: Agent[] = [
   },
   {
     id: 'companies',
-    name: 'Companies',
-    description: 'Search 16k+ companies from Affinity — filter by industry, country, or stage.',
+    name: 'Network',
+    description: 'Search 20K+ people in my network. Filter by industry, country, and stage.',
     icon: (
       <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
