@@ -16,7 +16,8 @@ const agents: Agent[] = [
     icon: (
       <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-          d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+          d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.937A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.582a.5.5 0 0 1 0 .962L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 3v4M22 5h-4M4 17v2M5 18H3" />
       </svg>
     ),
     ready: true,
@@ -28,7 +29,7 @@ const agents: Agent[] = [
     icon: (
       <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+          d="M13 2 3 14h9l-1 8 10-12h-9l1-8z" />
       </svg>
     ),
     ready: true,
@@ -40,7 +41,11 @@ const agents: Agent[] = [
     icon: (
       <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-          d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+          d="M18 8a4 4 0 0 1 0 8" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+          d="M18 4a8 8 0 0 1 0 16" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+          d="M6 8.999h2.764c2.56 0 5.272-.65 7.236-2v8c-1.964-1.35-4.676-2-7.236-2H6a2 2 0 0 1-2-2v-2a2 2 0 0 1 2-2z" />
       </svg>
     ),
     ready: true,
@@ -51,8 +56,9 @@ const agents: Agent[] = [
     description: 'Find domain experts by area of expertise, nationality, or company for warm intros.',
     icon: (
       <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <circle cx="12" cy="8" r="6" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} />
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-          d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+          d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11" />
       </svg>
     ),
     ready: true,
@@ -63,8 +69,11 @@ const agents: Agent[] = [
     description: 'Search 20K+ people in my network. Filter by industry, country, and stage.',
     icon: (
       <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <circle cx="18" cy="5" r="3" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} />
+        <circle cx="6" cy="12" r="3" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} />
+        <circle cx="18" cy="19" r="3" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} />
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          d="m8.59 13.51 6.83 3.98M15.41 6.51l-6.82 3.98" />
       </svg>
     ),
     ready: true,
@@ -76,7 +85,9 @@ const agents: Agent[] = [
     icon: (
       <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-          d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+          d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14 2v6h6" />
+        <path strokeLinecap="round" strokeWidth={1.5} d="M16 13H8M16 17H8M10 9H8" />
       </svg>
     ),
     ready: true,
@@ -104,8 +115,8 @@ export default function AgentSelectPage({ onSelect, onLogout }: Props) {
 
       {/* Content */}
       <div className="flex-1 flex flex-col items-center justify-center px-4 py-12">
-        <h1 className="text-4xl font-black uppercase tracking-tight text-gray-900 mb-2">Choose an Assistant</h1>
-        <p className="text-gray-400 mb-10 text-center text-sm uppercase tracking-widest font-medium">Select a tool</p>
+        <h1 style={{ fontFamily: "'Space Grotesk', sans-serif" }} className="text-4xl font-extrabold tracking-tight text-gray-900 mb-2">Roosh LP Platform</h1>
+        <p className="text-gray-400 mb-10 text-center text-sm uppercase tracking-widest font-medium">Select a workspace</p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-px bg-gray-100 border border-gray-100 w-full max-w-5xl">
           {agents.map(agent => (
@@ -131,7 +142,7 @@ export default function AgentSelectPage({ onSelect, onLogout }: Props) {
               >
                 <span className={agent.ready ? 'text-white' : 'text-gray-400'}>{agent.icon}</span>
               </div>
-              <h3 className="font-black uppercase tracking-tight text-gray-900 mb-1">{agent.name}</h3>
+              <h3 style={{ fontFamily: "'Space Grotesk', sans-serif" }} className="font-bold tracking-tight text-gray-900 mb-1">{agent.name}</h3>
               <p className="text-sm text-gray-400 leading-relaxed">{agent.description}</p>
             </button>
           ))}
