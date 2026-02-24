@@ -483,12 +483,9 @@ class DataProcessor:
             if col.lower().replace("_", " ").strip() == search_lower:
                 return col
 
-        # Strategy 2: Column ends with search term
-        for col in df.columns:
-            if col.lower().strip().endswith(search_lower):
-                return col
-
-        # Strategy 3: Handle common aliases (MOVED UP - check before broad substring)
+        # Strategy 2: Handle common aliases — checked BEFORE "ends with" to avoid wrong matches.
+        # e.g. "Initial Investment post valuation" ends with "valuation" and would incorrectly
+        # win over "Last round post-money valuation, $M" without this ordering.
         # Comprehensive column mapping system - maps user filter terms to Google Sheets columns
         aliases = {
             # Financial metrics
@@ -540,6 +537,11 @@ class DataProcessor:
                         if variation in col.lower():
                             logger.debug(f"Matched '{search_term}' to column '{col}' via alias '{variation}'")
                             return col
+
+        # Strategy 3: Column ends with search term
+        for col in df.columns:
+            if col.lower().strip().endswith(search_lower):
+                return col
 
         # Strategy 4: Broad substring match (as fallback only)
         for col in df.columns:
