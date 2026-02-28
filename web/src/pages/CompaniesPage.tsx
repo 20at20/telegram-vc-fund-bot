@@ -237,7 +237,7 @@ export default function CompaniesPage({ token, onLogout, onBack }: Props) {
       </div>
 
       {/* Table */}
-      <div className="flex-1 overflow-auto px-4 py-4">
+      <div className="flex-1 overflow-auto px-4 pb-4">
         {loading ? (
           <div className="space-y-3">
             {[...Array(8)].map((_, i) => (
