@@ -91,7 +91,7 @@ async def _fetch_company_news(company: dict) -> list[dict]:
 
     try:
         async with httpx.AsyncClient(
-            timeout=10.0,
+            timeout=6.0,
             follow_redirects=True,
             headers={"User-Agent": "Mozilla/5.0"},
         ) as client:
@@ -211,7 +211,7 @@ async def refresh_all_news() -> None:
         logger.warning("No portfolio companies found — skipping news refresh")
         return
 
-    sem = asyncio.Semaphore(5)  # max 5 concurrent Google News requests
+    sem = asyncio.Semaphore(10)  # max 10 concurrent Google News requests
 
     async def fetch_with_semaphore(company: dict) -> tuple[str, list[dict]]:
         async with sem:
