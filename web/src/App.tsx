@@ -7,6 +7,8 @@ import AsksPage from './pages/AsksPage'
 import CompaniesPage from './pages/CompaniesPage'
 import ExpertsPage from './pages/ExpertsPage'
 import NewslettersPage from './pages/NewslettersPage'
+import NewsPage from './pages/NewsPage'
+import SubmitDealPage from './pages/SubmitDealPage'
 
 export default function App() {
   const [token, setToken] = useState<string | null>(
@@ -48,6 +50,14 @@ export default function App() {
 
   if (selectedAgent === 'newsletters') {
     return <NewslettersPage onLogout={handleLogout} onBack={handleBack} />
+  }
+
+  if (selectedAgent === 'portfolio-news') {
+    return <NewsPage token={token} onLogout={handleLogout} onBack={handleBack} />
+  }
+
+  if (selectedAgent === 'submit-deal') {
+    return <SubmitDealPage token={token} onLogout={handleLogout} onBack={handleBack} />
   }
 
   return <ChatPage token={token} onLogout={handleLogout} onBack={handleBack} />

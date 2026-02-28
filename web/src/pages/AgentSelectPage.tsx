@@ -99,6 +99,30 @@ const agents: Agent[] = [
     ),
     ready: true,
   },
+  {
+    id: 'portfolio-news',
+    name: 'Portfolio News',
+    description: 'Daily news digest for portfolio companies. Significant news from the last 7 days.',
+    icon: (
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+          d="M19 20H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v1m2 13a2 2 0 0 1-2-2V7m2 13a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-2m-4-3H9M7 16h6M7 12h6M7 8h6" />
+      </svg>
+    ),
+    ready: true,
+  },
+  {
+    id: 'submit-deal',
+    name: 'Submit a Deal',
+    description: 'Share a company for ROOSH consideration — attach a deck and your thoughts.',
+    icon: (
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+          d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
+      </svg>
+    ),
+    ready: true,
+  },
 ]
 
 interface Props {
