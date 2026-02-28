@@ -2,6 +2,7 @@
 FastAPI web app — exposes the bot's intelligence via HTTP for the React frontend.
 """
 
+import asyncio
 import secrets
 import smtplib
 from contextlib import asynccontextmanager
@@ -376,9 +377,13 @@ def create_app() -> FastAPI:
                 part.add_header("Content-Disposition", f'attachment; filename="{deck.filename}"')
                 msg.attach(part)
 
-            with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-                server.login(settings.gmail_user, settings.gmail_app_password)
-                server.sendmail(settings.gmail_user, settings.gmail_user, msg.as_string())
+            def _send():
+                with smtplib.SMTP("smtp.gmail.com", 587) as server:
+                    server.ehlo()
+                    server.starttls()
+                    server.login(settings.gmail_user, settings.gmail_app_password)
+                    server.sendmail(settings.gmail_user, settings.gmail_user, msg.as_string())
+            await asyncio.to_thread(_send)
 
             logger.info("Deal submission sent", company=company_name)
             return {"success": True}
