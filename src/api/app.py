@@ -183,8 +183,9 @@ async def lifespan(app: FastAPI):
         replace_existing=True,
     )
     scheduler.start()
-    logger.info("News scheduler started — running initial fetch")
-    await refresh_all_news()
+    logger.info("News scheduler started — fetching news in background")
+    import asyncio
+    asyncio.create_task(refresh_all_news())
     yield
     scheduler.shutdown(wait=False)
     logger.info("News scheduler stopped")
