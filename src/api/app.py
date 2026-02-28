@@ -276,6 +276,21 @@ def create_app() -> FastAPI:
             logger.error("Error in /api/asks", error=str(e), exc_info=True)
             raise HTTPException(status_code=500, detail="Error fetching asks data")
 
+    @app.get("/api/fund_metrics")
+    async def fund_metrics(_token: str = Depends(verify_token)):
+        try:
+            fund_df = await sheets_service.get_fund_metrics()
+            metric_names = ["TVPI", "IRR", "DPI", "Portfolio Value", "Realised Value", "Investments"]
+            metrics = []
+            for name in metric_names:
+                result = data_processor.process_fund_metric(fund_df, name, "latest")
+                if "error" not in result:
+                    metrics.append(result)
+            return {"metrics": metrics}
+        except Exception as e:
+            logger.error("Error in /api/fund_metrics", error=str(e), exc_info=True)
+            raise HTTPException(status_code=500, detail="Error fetching fund metrics")
+
     @app.get("/api/companies")
     async def companies(
         _token: str = Depends(verify_token),
