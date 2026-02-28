@@ -28,7 +28,7 @@ export default function App() {
   const handleBack = () => setSelectedAgent(null)
 
   if (!token) return <LoginPage onLogin={handleLogin} />
-  if (!selectedAgent) return <AgentSelectPage onSelect={setSelectedAgent} onLogout={handleLogout} />
+  if (!selectedAgent) return <AgentSelectPage token={token} onSelect={setSelectedAgent} onLogout={handleLogout} />
 
   if (selectedAgent === 'deals') {
     return <DealsPage token={token} onLogout={handleLogout} onBack={handleBack} />
