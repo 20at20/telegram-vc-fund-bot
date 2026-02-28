@@ -2,15 +2,12 @@
 FastAPI web app — exposes the bot's intelligence via HTTP for the React frontend.
 """
 
-import asyncio
+import base64
 import secrets
-import smtplib
 from contextlib import asynccontextmanager
-from email import encoders
-from email.mime.base import MIMEBase
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
 from typing import List, Dict, Any, Optional
+
+import httpx
 
 import pandas as pd
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -354,36 +351,37 @@ def create_app() -> FastAPI:
         deck: UploadFile | None = File(None),
         _token: str = Depends(verify_token),
     ):
-        if not settings.gmail_user or not settings.gmail_app_password:
+        if not settings.resend_api_key:
             raise HTTPException(status_code=503, detail="Email delivery is not configured")
         try:
-            msg = MIMEMultipart()
-            msg["From"] = settings.gmail_user
-            msg["To"] = settings.gmail_user
-            msg["Subject"] = f"Deal submitted: {company_name}"
-
             body_parts = [f"Company: {company_name}"]
             if available_info:
                 body_parts.append(f"\nAvailable information:\n{available_info}")
             if thoughts:
                 body_parts.append(f"\nThoughts:\n{thoughts}")
-            msg.attach(MIMEText("\n".join(body_parts), "plain"))
+
+            payload: Dict[str, Any] = {
+                "from": "Deal Submissions <onboarding@resend.dev>",
+                "to": ["at@roosh.vc"],
+                "subject": f"Deal submitted: {company_name}",
+                "text": "\n".join(body_parts),
+            }
 
             if deck and deck.filename:
                 file_bytes = await deck.read()
-                part = MIMEBase("application", "octet-stream")
-                part.set_payload(file_bytes)
-                encoders.encode_base64(part)
-                part.add_header("Content-Disposition", f'attachment; filename="{deck.filename}"')
-                msg.attach(part)
+                payload["attachments"] = [{
+                    "filename": deck.filename,
+                    "content": base64.b64encode(file_bytes).decode(),
+                }]
 
-            def _send():
-                with smtplib.SMTP("smtp.gmail.com", 587) as server:
-                    server.ehlo()
-                    server.starttls()
-                    server.login(settings.gmail_user, settings.gmail_app_password)
-                    server.sendmail(settings.gmail_user, settings.gmail_user, msg.as_string())
-            await asyncio.to_thread(_send)
+            async with httpx.AsyncClient() as client:
+                resp = await client.post(
+                    "https://api.resend.com/emails",
+                    json=payload,
+                    headers={"Authorization": f"Bearer {settings.resend_api_key}"},
+                    timeout=15,
+                )
+                resp.raise_for_status()
 
             logger.info("Deal submission sent", company=company_name)
             return {"success": True}
