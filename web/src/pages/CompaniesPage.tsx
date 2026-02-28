@@ -238,34 +238,33 @@ export default function CompaniesPage({ token, onLogout, onBack }: Props) {
 
       {/* Table */}
       <div className="flex-1 overflow-auto px-4 py-4">
-        <div className="overflow-x-auto">
-          {loading ? (
-            <div className="space-y-3">
-              {[...Array(8)].map((_, i) => (
-                <div key={i} className="h-10 bg-gray-100 animate-pulse" />
+        {loading ? (
+          <div className="space-y-3">
+            {[...Array(8)].map((_, i) => (
+              <div key={i} className="h-10 bg-gray-100 animate-pulse" />
+            ))}
+          </div>
+        ) : error ? (
+          <p className="text-center text-gray-400 py-12">{error}</p>
+        ) : !hasSearched ? (
+          <p className="text-center text-gray-400 py-12">Search for companies or select a filter to get started.</p>
+        ) : rows.length === 0 ? (
+          <p className="text-center text-gray-400 py-12">No companies match your search.</p>
+        ) : (
+          <table className="text-sm border-collapse" style={{ tableLayout: 'fixed', width: `${tableWidth}px` }}>
+            <colgroup>
+              {columns.map(col => (
+                <col key={col} style={{ width: colWidth(col) }} />
               ))}
-            </div>
-          ) : error ? (
-            <p className="text-center text-gray-400 py-12">{error}</p>
-          ) : !hasSearched ? (
-            <p className="text-center text-gray-400 py-12">Search for companies or select a filter to get started.</p>
-          ) : rows.length === 0 ? (
-            <p className="text-center text-gray-400 py-12">No companies match your search.</p>
-          ) : (
-            <table className="text-sm border-collapse" style={{ tableLayout: 'fixed', width: `${tableWidth}px` }}>
-              <colgroup>
+            </colgroup>
+            <thead>
+              <tr>
                 {columns.map(col => (
-                  <col key={col} style={{ width: colWidth(col) }} />
-                ))}
-              </colgroup>
-              <thead>
-                <tr>
-                  {columns.map(col => (
-                    <th
-                      key={col}
-                      className="text-left px-3 py-2 font-bold uppercase tracking-wider text-xs text-gray-500 border-b-2"
-                      style={{ borderBottomColor: '#1400FF' }}
-                    >
+                  <th
+                    key={col}
+                    className="text-left px-3 py-2 font-bold uppercase tracking-wider text-xs text-gray-500 border-b-2 sticky top-0 bg-white z-10"
+                    style={{ borderBottomColor: '#1400FF' }}
+                  >
                       {col}
                     </th>
                   ))}
@@ -321,7 +320,6 @@ export default function CompaniesPage({ token, onLogout, onBack }: Props) {
               </tbody>
             </table>
           )}
-        </div>
 
         {/* Pagination */}
         {hasSearched && total > pageSize && (
