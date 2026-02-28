@@ -106,6 +106,19 @@ export default function CompaniesPage({ token, onLogout, onBack }: Props) {
 
   const nameCol = columns.find(c => c.toLowerCase() === 'name') || ''
 
+  const formatCell = (col: string, value: string): string => {
+    if (!value || value === 'nan' || value === '') return ''
+    if (col === 'Year Founded') {
+      const n = parseFloat(value)
+      return isNaN(n) ? value : String(Math.round(n))
+    }
+    if (col === 'Last Funding Amount (USD)' || col === 'Total Funding Amount (USD)') {
+      const n = parseFloat(value)
+      return isNaN(n) ? value : Math.round(n).toLocaleString('en-US')
+    }
+    return value
+  }
+
   const colWidths: Record<string, string> = {
     'Name': '180px',
     'Description': '400px',
@@ -128,7 +141,7 @@ export default function CompaniesPage({ token, onLogout, onBack }: Props) {
 
   const isWrapColumn = (col: string) => {
     const lower = col.toLowerCase()
-    return lower.includes('descri') || lower.includes('investors') || lower.includes('people')
+    return lower.includes('descri') || lower.includes('investors') || lower.includes('people') || lower.includes('industry')
   }
 
   return (
@@ -163,7 +176,7 @@ export default function CompaniesPage({ token, onLogout, onBack }: Props) {
             <input
               value={search}
               onChange={e => setSearch(e.target.value)}
-              placeholder="Search companies..."
+              placeholder="Name, industry, investor, or any keyword..."
               className="w-full border-2 border-gray-200 px-3 py-2 text-sm text-gray-900 placeholder-gray-300 focus:outline-none transition"
               onFocus={e => (e.target.style.borderColor = '#1400FF')}
               onBlur={e => (e.target.style.borderColor = '#e5e7eb')}
@@ -299,7 +312,7 @@ export default function CompaniesPage({ token, onLogout, onBack }: Props) {
                             )}
                           </span>
                         ) : (
-                          row[col] ?? ''
+                          formatCell(col, row[col] ?? '')
                         )}
                       </td>
                     ))}
