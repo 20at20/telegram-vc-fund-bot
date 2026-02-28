@@ -145,7 +145,7 @@ export default function CompaniesPage({ token, onLogout, onBack }: Props) {
   }
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    <div className="h-screen bg-white flex flex-col overflow-hidden">
       {/* Header */}
       <header className="flex items-center justify-between px-4 py-3 border-b-2 border-gray-100 bg-white">
         <div className="flex items-center gap-3">
