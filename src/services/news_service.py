@@ -80,6 +80,8 @@ async def _fetch_company_news(company: dict) -> list[dict]:
             parts.append(company["vertical"])
         if not _is_empty(company.get("country", "")):
             parts.append(company["country"])
+        if not _is_empty(company.get("description", "")):
+            parts.append(company["description"])
         for excl in _SEARCH_EXCLUSIONS.get(name, []):
             parts.append(excl)
         query = " ".join(parts)
@@ -171,6 +173,10 @@ async def _get_company_data() -> list[dict]:
             (c for c in df.columns if any(k in c.lower() for k in ("hq", "location"))),
             None,
         )
+        description_col = next(
+            (c for c in df.columns if any(k in c.lower() for k in ("description", "short desc", "about"))),
+            None,
+        )
 
         companies = []
         for _, row in df.iterrows():
@@ -179,7 +185,9 @@ async def _get_company_data() -> list[dict]:
                 continue
             vertical = str(row[vertical_col]).strip() if vertical_col else ""
             country = str(row[country_col]).strip() if country_col else ""
-            companies.append({"name": name, "vertical": vertical, "country": country})
+            raw_desc = str(row[description_col]).strip() if description_col else ""
+            description = " ".join(raw_desc.split()[:4]) if not _is_empty(raw_desc) else ""
+            companies.append({"name": name, "vertical": vertical, "country": country, "description": description})
 
         logger.info(
             "Portfolio companies loaded for news",
@@ -187,6 +195,7 @@ async def _get_company_data() -> list[dict]:
             all_cols=list(df.columns),
             vertical_col=vertical_col,
             country_col=country_col,
+            description_col=description_col,
         )
         return companies
 
