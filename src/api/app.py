@@ -3,10 +3,17 @@ FastAPI web app — exposes the bot's intelligence via HTTP for the React fronte
 """
 
 import secrets
+import smtplib
+from contextlib import asynccontextmanager
+from email import encoders
+from email.mime.base import MIMEBase
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from typing import List, Dict, Any, Optional
 
 import pandas as pd
-from fastapi import FastAPI, HTTPException, Depends
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from fastapi import FastAPI, HTTPException, Depends, Form, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
@@ -17,6 +24,7 @@ from src.services.data_processor import data_processor
 from src.services.sheets_service import sheets_service
 from src.services.companies_service import companies_service
 from src.services.response_generator import response_generator
+from src.services.news_service import refresh_all_news, get_cached_news
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -162,10 +170,32 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
     return credentials.credentials
 
 
+# ── Startup / shutdown ─────────────────────────────────────────────────────────
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Start news scheduler on startup; stop it cleanly on shutdown."""
+    scheduler = AsyncIOScheduler(timezone="UTC")
+    scheduler.add_job(
+        refresh_all_news,
+        trigger="cron",
+        hour=7,
+        minute=0,
+        id="daily_news_refresh",
+        replace_existing=True,
+    )
+    scheduler.start()
+    logger.info("News scheduler started — running initial fetch")
+    await refresh_all_news()
+    yield
+    scheduler.shutdown(wait=False)
+    logger.info("News scheduler stopped")
+
+
 # ── App factory ────────────────────────────────────────────────────────────────
 
 def create_app() -> FastAPI:
-    app = FastAPI(title="RV Fund Bot API", docs_url=None, redoc_url=None)
+    app = FastAPI(title="RV Fund Bot API", docs_url=None, redoc_url=None, lifespan=lifespan)
 
     app.add_middleware(
         CORSMiddleware,
@@ -306,5 +336,54 @@ def create_app() -> FastAPI:
         except Exception as e:
             logger.error("Error in /api/companies", error=str(e), exc_info=True)
             raise HTTPException(status_code=500, detail="Error searching companies")
+
+    @app.get("/api/news")
+    async def news(_token: str = Depends(verify_token)):
+        try:
+            return get_cached_news()
+        except Exception as e:
+            logger.error("Error in /api/news", error=str(e), exc_info=True)
+            raise HTTPException(status_code=500, detail="Error fetching news")
+
+    @app.post("/api/submit_deal")
+    async def submit_deal(
+        company_name: str = Form(...),
+        available_info: str = Form(""),
+        thoughts: str = Form(""),
+        deck: UploadFile | None = File(None),
+        _token: str = Depends(verify_token),
+    ):
+        if not settings.gmail_user or not settings.gmail_app_password:
+            raise HTTPException(status_code=503, detail="Email delivery is not configured")
+        try:
+            msg = MIMEMultipart()
+            msg["From"] = settings.gmail_user
+            msg["To"] = settings.gmail_user
+            msg["Subject"] = f"Deal submitted: {company_name}"
+
+            body_parts = [f"Company: {company_name}"]
+            if available_info:
+                body_parts.append(f"\nAvailable information:\n{available_info}")
+            if thoughts:
+                body_parts.append(f"\nThoughts:\n{thoughts}")
+            msg.attach(MIMEText("\n".join(body_parts), "plain"))
+
+            if deck and deck.filename:
+                file_bytes = await deck.read()
+                part = MIMEBase("application", "octet-stream")
+                part.set_payload(file_bytes)
+                encoders.encode_base64(part)
+                part.add_header("Content-Disposition", f'attachment; filename="{deck.filename}"')
+                msg.attach(part)
+
+            with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+                server.login(settings.gmail_user, settings.gmail_app_password)
+                server.sendmail(settings.gmail_user, settings.gmail_user, msg.as_string())
+
+            logger.info("Deal submission sent", company=company_name)
+            return {"success": True}
+        except Exception as e:
+            logger.error("Error in /api/submit_deal", error=str(e), exc_info=True)
+            raise HTTPException(status_code=500, detail="Failed to send deal submission")
 
     return app

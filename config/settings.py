@@ -80,6 +80,10 @@ class Settings(BaseSettings):
         default="mcp_config.json", description="Path to MCP configuration file"
     )
 
+    # Email Configuration (for deal submissions)
+    gmail_user: str = Field(default="", description="Gmail address to send deal submissions from/to")
+    gmail_app_password: str = Field(default="", description="Gmail App Password for SMTP")
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
