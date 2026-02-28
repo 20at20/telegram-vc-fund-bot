@@ -17,6 +17,16 @@ from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
+# Full query overrides for companies whose name is too ambiguous to auto-generate a good query.
+# Use when the company name is a common word or clashes with a more prominent company.
+_CUSTOM_QUERIES: dict[str, str] = {
+    "Jump": '"join-jump" fintech France',  # join-jump.com — French fintech for freelancers
+}
+
+# Per-company search exclusions appended to the auto-generated query.
+# Add entries here when a company name clashes with another company in results.
+_SEARCH_EXCLUSIONS: dict[str, list[str]] = {}
+
 # ── In-memory cache ────────────────────────────────────────────────────────────
 
 _news_cache: list = []   # list of {"name": str, "news": list[dict]}
@@ -55,19 +65,24 @@ def _is_empty(value: str) -> bool:
 async def _fetch_company_news(company: dict) -> list[dict]:
     """
     Fetch Google News RSS for a company.
-    Query: "{name}" startup {vertical} {region}
+    Query: "{name}" {vertical} {country}
     Returns up to 2 items published within the last 7 days.
     Returns [] on any error or timeout.
     """
     cutoff = datetime.now(timezone.utc) - timedelta(days=7)
 
     name = company["name"]
-    parts = [f'"{name}"', "startup"]
-    if not _is_empty(company.get("vertical", "")):
-        parts.append(company["vertical"])
-    if not _is_empty(company.get("country", "")):
-        parts.append(company["country"])
-    query = " ".join(parts)
+    if name in _CUSTOM_QUERIES:
+        query = _CUSTOM_QUERIES[name]
+    else:
+        parts = [f'"{name}"']
+        if not _is_empty(company.get("vertical", "")):
+            parts.append(company["vertical"])
+        if not _is_empty(company.get("country", "")):
+            parts.append(company["country"])
+        for excl in _SEARCH_EXCLUSIONS.get(name, []):
+            parts.append(excl)
+        query = " ".join(parts)
 
     url = (
         f"https://news.google.com/rss/search"
