@@ -280,7 +280,7 @@ def create_app() -> FastAPI:
     async def fund_metrics(_token: str = Depends(verify_token)):
         try:
             fund_df = await sheets_service.get_fund_metrics()
-            metric_names = ["TVPI", "IRR", "DPI", "Portfolio Value", "Realised Value", "Investments"]
+            metric_names = ["TVPI", "IRR", "DPI", "RV investments, $K", "Portfolio Value", "Realised Value"]
             metrics = []
             for name in metric_names:
                 result = data_processor.process_fund_metric(fund_df, name, "latest")
