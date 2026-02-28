@@ -11,6 +11,14 @@ from src.utils.logger import get_logger
 logger = get_logger(__name__)
 
 
+# Columns to hide from all query results (internal/irrelevant data)
+HIDDEN_COLUMNS = [
+    "Co-investment, $K",
+    "Co-investment investment value, $K",
+    "Co-investment fees, $K",
+]
+
+
 # Industry vertical synonyms mapping - helps match user queries to actual sheet values
 # E.g., "finance" or "financial industry" should match "fintech"
 VERTICAL_SYNONYMS = {
@@ -811,6 +819,13 @@ class DataProcessor:
             logger.error("Error processing portfolio list", error=str(e))
             return df
 
+    def _drop_hidden_columns(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Remove columns that should never be shown to users."""
+        cols_to_drop = [c for c in HIDDEN_COLUMNS if c in df.columns]
+        if cols_to_drop:
+            df = df.drop(columns=cols_to_drop)
+        return df
+
     def process_query(self, intent: QueryIntent, fund_df: pd.DataFrame, portfolio_df: pd.DataFrame) -> Any:
         """
         Process a query based on its intent.
@@ -835,16 +850,22 @@ class DataProcessor:
         elif intent.query_type == QueryType.PORTFOLIO_RANKING:
             sort_by = intent.sort_by or "investment_amount"
             limit = intent.limit or 5
-            return self.process_portfolio_ranking(
+            result = self.process_portfolio_ranking(
                 portfolio_df, sort_by, limit, show_all_details=intent.show_all_details, ascending=intent.ascending,
                 company_names=intent.company_names or None,
             )
+            if isinstance(result, pd.DataFrame):
+                result = self._drop_hidden_columns(result)
+            return result
 
         elif intent.query_type == QueryType.PORTFOLIO_LIST:
-            return self.process_portfolio_list(
+            result = self.process_portfolio_list(
                 portfolio_df, intent.filters, show_all_details=intent.show_all_details,
                 company_names=intent.company_names or None,
             )
+            if isinstance(result, pd.DataFrame):
+                result = self._drop_hidden_columns(result)
+            return result
 
         elif intent.query_type == QueryType.COMPANY_DETAIL:
             if intent.company_name:
@@ -852,6 +873,8 @@ class DataProcessor:
                 result = self.process_portfolio_list(
                     portfolio_df, filters, show_all_details=True
                 )
+                if isinstance(result, pd.DataFrame):
+                    result = self._drop_hidden_columns(result)
                 # Narrow columns if user asked about specific fields
                 if intent.specific_fields and isinstance(result, pd.DataFrame) and not result.empty:
                     company_col = self._find_column(result, "company name")
@@ -860,8 +883,10 @@ class DataProcessor:
                         col = self._find_column(result, field)
                         if col and col not in selected:
                             selected.append(col)
-                    if selected:
-                        result = result[selected]
+                    if len(selected) <= 1:
+                        # All requested fields were missing — tell the AI explicitly
+                        return {"info": f"No data found for the requested field(s) ({', '.join(intent.specific_fields)}) for {intent.company_name}. The field may not exist or is empty in the sheet."}
+                    result = result[selected]
                 return result
             return {"error": "No company name specified"}
 

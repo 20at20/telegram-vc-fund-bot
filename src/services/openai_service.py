@@ -3,6 +3,7 @@ OpenAI service for query analysis and response generation.
 """
 
 from typing import List, Optional, Dict, Any
+import pandas as pd
 from openai import AsyncOpenAI
 
 from config.settings import settings
@@ -179,6 +180,36 @@ CRITICAL EXAMPLES - Geographic and Sector Filtering:
 "Which companies had 3 years+ without new round?" → {"query_type": "portfolio_list", "filters": {"years_since_last_financing": "3"}}
 "Companies that haven't raised in 2+ years" → {"query_type": "portfolio_list", "filters": {"years_since_last_financing": "2"}}
 
+ACTUAL PORTFOLIO DATA COLUMNS (exact names in the sheet — use these to interpret user questions):
+- "Company name" — company name
+- "Short description" — what the company does
+- "Founded" — founding year
+- "HQ" — city/country of headquarters (maps to "hq", "location", "country")
+- "Region" — region where company primarily operates (maps to "region")
+- "Vertical" — industry sector e.g. Fintech, AI, HealthTech (maps to "vertical", "sector", "industry")
+- "Tech" — AI or Web3 technology used
+- "Business model" — B2B or B2C
+- "Founder / CEO" — founder or CEO name
+- "Ambassador" — whether founder is a close contact of the fund
+- "Notable co-investors" — tier-1 funds that co-invested with us
+- "RV Initial Investment date" — date our fund invested (maps to "investment_date")
+- "RV Initial Investment stage" — round when we first invested: Seed, Series A, etc. (maps to "stage")
+- "Initial Investment post valuation" — company valuation at the time we invested (NOT current valuation)
+- "Last round date" — date of the company's most recent funding round (maps to "last_round_date")
+- "Years since last financing" — how many years since last funding round
+- "Last round stage" — stage of the most recent funding round
+- "Last round post-money valuation, $M" — CURRENT/LATEST valuation of the company in $M (maps to "valuation")
+- "RV investment, $K" — total amount our fund invested in $K (maps to "investment")
+- "RV investments value, $K" — current value of our fund's stake in $K
+- "RV share in the company $K" — our ownership percentage in the company
+- "Investment (w/o fees) return" — current return multiplier (e.g. 7.1 = 7.1x return) (maps to "return")
+
+KEY DISTINCTIONS:
+- "valuation" = "Last round post-money valuation, $M" (CURRENT/latest valuation)
+- "Initial Investment post valuation" = valuation WHEN WE INVESTED (historical, not current)
+- "return" = "Investment (w/o fees) return" (a multiplier, NOT dollars)
+- "investment" = "RV investment, $K" (how much we put in)
+
 FOLLOW-UP / REFERENTIAL QUERIES:
 When the user refers to previously returned results using words like "these", "those", "them", "which of them", "from those", "among these", "of these companies", "from the list", etc., you MUST:
 1. Recognize this is a follow-up query referencing previous results
@@ -333,25 +364,44 @@ SPECIAL HANDLING FOR DEFINITION/GENERAL QUESTIONS:
             if conversation_history:
                 messages.extend(conversation_history[-6:])  # Last 6 messages (3 exchanges)
 
-            # Add current request with explicit metadata
-            data_str = str(data) if data is not None else "No data found"
-
-            # Add helpful metadata for counting queries
-            metadata = ""
-            if hasattr(data, '__len__') and hasattr(data, 'shape'):
-                # It's a DataFrame
-                metadata = f"\n\nMETADATA: This DataFrame has {len(data)} rows (companies)."
+            # Format data as clean labeled rows so the AI sees every field without truncation
+            if data is None:
+                data_str = "No data found."
+                metadata = ""
+            elif isinstance(data, pd.DataFrame):
+                if data.empty:
+                    data_str = "No data found."
+                    metadata = ""
+                else:
+                    rows = []
+                    for _, row in data.iterrows():
+                        parts = []
+                        for col, val in row.items():
+                            val_str = str(val).strip()
+                            if val_str in ("", "nan", "None", "NaN"):
+                                parts.append(f"{col}: (no data)")
+                            else:
+                                parts.append(f"{col}: {val_str}")
+                        rows.append(" | ".join(parts))
+                    data_str = "\n".join(rows)
+                    metadata = f"\n\nMETADATA: {len(data)} row(s) returned."
+            elif isinstance(data, dict):
+                data_str = "\n".join(f"{k}: {v}" for k, v in data.items())
+                metadata = ""
+            else:
+                data_str = str(data)
+                metadata = ""
 
             messages.append({
                 "role": "user",
-                "content": f"User asked: '{original_query}'\n\nData: {data_str}{metadata}\n\nGenerate a helpful response in Telegram markdown format.",
+                "content": f"User asked: '{original_query}'\n\nData:\n{data_str}{metadata}\n\nGenerate a helpful response in Telegram markdown format.",
             })
 
             # Call OpenAI
             response = await self.client.chat.completions.create(
                 model=self.model,
                 messages=messages,
-                temperature=0.7,
+                temperature=0.1,
                 max_tokens=1000,
             )
 
