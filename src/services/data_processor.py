@@ -538,7 +538,7 @@ class DataProcessor:
             "exit_type": ["exit type", "exit method", "exit strategy"],
         }
 
-        for alias, variations in aliases.items():
+        for alias, variations in sorted(aliases.items(), key=lambda x: len(x[0]), reverse=True):
             if alias in search_lower:
                 for variation in variations:
                     for col in df.columns:
