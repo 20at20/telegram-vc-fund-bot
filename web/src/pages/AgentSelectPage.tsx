@@ -221,35 +221,21 @@ export default function AgentSelectPage({ onSelect, onLogout }: Props) {
         </div>
 
         {/* Right panel — Fund II overview */}
-        <div className="flex-1 overflow-y-auto bg-gray-50">
-          <div className="flex h-full">
+        <div className="flex-1 overflow-y-auto bg-gray-50 flex items-center justify-center p-10">
+          <div className="w-full max-w-2xl flex flex-col gap-0 border border-gray-200 bg-white">
 
-            {/* Fund size block */}
-            <div
-              className="flex flex-col justify-center items-start px-10 py-8 flex-shrink-0 w-52"
-              style={{ borderRight: '1px solid #e5e7eb' }}
-            >
-              <div
-                style={{ fontFamily: "'Space Grotesk', sans-serif", color: '#1400FF' }}
-                className="text-5xl font-extrabold leading-none"
-              >
-                €50M
-              </div>
-              <div
-                style={{ fontFamily: "'Space Grotesk', sans-serif" }}
-                className="text-3xl font-extrabold text-gray-900 mt-1"
-              >
-                Fund II
-              </div>
-              <div className="text-sm text-gray-400 mt-3 leading-snug">
-                with 25%+ IRR target
+            {/* Fund II title */}
+            <div className="px-8 py-6 border-b border-gray-200">
+              <div style={{ fontFamily: "'Space Grotesk', sans-serif" }} className="flex items-baseline gap-3">
+                <span style={{ color: '#1400FF' }} className="text-4xl font-extrabold leading-none">€50M</span>
+                <span className="text-3xl font-extrabold text-gray-900">Fund II</span>
               </div>
             </div>
 
             {/* Rows */}
-            <div className="flex-1 flex flex-col divide-y divide-gray-200">
+            <div className="flex flex-col divide-y divide-gray-200">
               {fundRows.map(row => (
-                <div key={row.label} className="flex items-stretch flex-1 min-h-0">
+                <div key={row.label} className="flex items-stretch">
                   {/* Vertical label */}
                   <div
                     className="flex items-center justify-center px-3 flex-shrink-0"
