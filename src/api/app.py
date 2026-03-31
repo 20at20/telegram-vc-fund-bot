@@ -17,6 +17,7 @@ from src.services.data_processor import data_processor
 from src.services.sheets_service import sheets_service
 from src.services.companies_service import companies_service
 from src.services.response_generator import response_generator
+from src.services.pdf_service import pdf_service
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -45,6 +46,13 @@ class ChatResponse(BaseModel):
     query_type: str
     structured_data: Optional[Dict[str, Any]] = None
     options: Optional[List[Dict[str, str]]] = None
+
+class LPChatRequest(BaseModel):
+    message: str
+    conversation_history: Optional[List[Dict[str, str]]] = []
+
+class LPChatResponse(BaseModel):
+    response: str
 
 
 # ── Data serialization ────────────────────────────────────────────────────────
@@ -291,5 +299,49 @@ def create_app() -> FastAPI:
         except Exception as e:
             logger.error("Error in /api/companies", error=str(e), exc_info=True)
             raise HTTPException(status_code=500, detail="Error searching companies")
+
+    @app.post("/api/lp-chat", response_model=LPChatResponse)
+    async def lp_chat(body: LPChatRequest, _token: str = Depends(verify_token)):
+        try:
+            doc_context = pdf_service.get_document_context()
+
+            if not doc_context:
+                return LPChatResponse(
+                    response="Fund documents haven't been loaded yet — please contact the team directly."
+                )
+
+            messages = [
+                {
+                    "role": "system",
+                    "content": f"""You are an assistant for LP investors of Fund II by ROOSH Ventures.
+Answer questions based ONLY on the fund documents provided below.
+Be professional, positive, and highlight the fund's strengths.
+Present information clearly and concisely.
+If a question cannot be answered from the documents, respond exactly with:
+"I don't have that information — please contact the team directly."
+Do not speculate, invent data, or provide information beyond what is in the documents.
+
+FUND DOCUMENTS:
+{doc_context}""",
+                }
+            ]
+
+            if body.conversation_history:
+                messages.extend(body.conversation_history[-6:])
+
+            messages.append({"role": "user", "content": body.message})
+
+            response = await openai_service.client.chat.completions.create(
+                model=openai_service.model,
+                messages=messages,
+                temperature=0.4,
+                max_tokens=1000,
+            )
+
+            return LPChatResponse(response=response.choices[0].message.content)
+
+        except Exception as e:
+            logger.error("Error in /api/lp-chat", error=str(e), exc_info=True)
+            raise HTTPException(status_code=500, detail="Internal error processing your query")
 
     return app

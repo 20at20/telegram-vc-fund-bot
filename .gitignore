@@ -56,3 +56,6 @@ htmlcov/
 
 # MCP
 mcp_data/
+
+# Fund documents (confidential — upload to server manually, never commit)
+data/fund2_docs/*.pdf

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import LoginPage from './pages/LoginPage'
 import AgentSelectPage from './pages/AgentSelectPage'
 import ChatPage from './pages/ChatPage'
+import LPChatPage from './pages/LPChatPage'
 import DealsPage from './pages/DealsPage'
 import AsksPage from './pages/AsksPage'
 import CompaniesPage from './pages/CompaniesPage'
@@ -29,6 +30,10 @@ export default function App() {
 
   if (!token) return <LoginPage onLogin={handleLogin} />
   if (!selectedAgent) return <AgentSelectPage onSelect={setSelectedAgent} onLogout={handleLogout} />
+
+  if (selectedAgent === 'fund-docs') {
+    return <LPChatPage token={token} onLogout={handleLogout} onBack={handleBack} />
+  }
 
   if (selectedAgent === 'deals') {
     return <DealsPage token={token} onLogout={handleLogout} onBack={handleBack} />
