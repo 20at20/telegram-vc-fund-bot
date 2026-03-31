@@ -70,6 +70,11 @@ class Settings(BaseSettings):
     )
     log_level: str = Field(default="INFO", description="Logging level")
 
+    # Fund II — Google Drive folder containing LP documents (PDFs)
+    fund2_drive_folder_id: str = Field(
+        default="", description="Google Drive folder ID for Fund II LP documents"
+    )
+
     # Web App Configuration
     web_password: str = Field(
         default="changeme", description="Password for web chat UI"

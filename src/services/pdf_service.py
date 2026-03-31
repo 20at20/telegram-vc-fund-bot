@@ -1,57 +1,89 @@
 """
-PDF service — loads and extracts text from all PDFs in data/fund2_docs/.
+PDF service — downloads PDFs from a Google Drive folder and extracts their text.
+
+The folder is set via FUND2_DRIVE_FOLDER_ID env var. Share the folder with
+the service account email and drop any PDFs there; restart the server to reload.
 
 Text is extracted once at first use and cached for the server session.
-Drop any PDF into data/fund2_docs/ and restart the server to pick it up.
 """
 
-from pathlib import Path
+import io
 from typing import Optional
 
 import pdfplumber
+from google.oauth2.service_account import Credentials
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaIoBaseDownload
 
+from config.settings import settings
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
-DOCS_DIR = Path(__file__).parent.parent.parent / "data" / "fund2_docs"
+_SCOPES = ["https://www.googleapis.com/auth/drive.readonly"]
 
 
 class PDFService:
     def __init__(self):
         self._cached_text: Optional[str] = None
 
+    def _drive(self):
+        credentials = Credentials.from_service_account_file(
+            settings.google_credentials_file, scopes=_SCOPES
+        )
+        return build("drive", "v3", credentials=credentials, cache_discovery=False)
+
     def get_document_context(self) -> Optional[str]:
         """
-        Return concatenated text from all PDFs in data/fund2_docs/.
-        Result is cached for the server session — restart to reload.
+        Download all PDFs from the configured Drive folder, extract their text,
+        and return it as a single string. Result is cached for the server session.
         """
         if self._cached_text is not None:
             return self._cached_text
 
-        if not DOCS_DIR.exists():
-            logger.warning("fund2_docs directory not found", path=str(DOCS_DIR))
+        if not settings.fund2_drive_folder_id:
+            logger.warning("FUND2_DRIVE_FOLDER_ID is not set — LP chat has no documents")
             return None
 
-        pdf_files = sorted(DOCS_DIR.glob("*.pdf"))
-        if not pdf_files:
-            logger.warning("No PDF files found in fund2_docs", path=str(DOCS_DIR))
+        try:
+            drive = self._drive()
+            results = drive.files().list(
+                q=(
+                    f"'{settings.fund2_drive_folder_id}' in parents"
+                    " and mimeType='application/pdf'"
+                    " and trashed=false"
+                ),
+                fields="files(id, name)",
+                orderBy="name",
+            ).execute()
+        except Exception as e:
+            logger.error("Failed to list Drive folder", error=str(e))
+            return None
+
+        files = results.get("files", [])
+        if not files:
+            logger.warning("No PDF files found in Drive folder", folder_id=settings.fund2_drive_folder_id)
             return None
 
         texts = []
-        for pdf_path in pdf_files:
+        for file in files:
             try:
-                with pdfplumber.open(pdf_path) as pdf:
-                    page_texts = [
-                        page.extract_text()
-                        for page in pdf.pages
-                        if page.extract_text()
-                    ]
+                request = drive.files().get_media(fileId=file["id"])
+                fh = io.BytesIO()
+                downloader = MediaIoBaseDownload(fh, request)
+                done = False
+                while not done:
+                    _, done = downloader.next_chunk()
+
+                fh.seek(0)
+                with pdfplumber.open(fh) as pdf:
+                    page_texts = [p.extract_text() for p in pdf.pages if p.extract_text()]
+
                 if page_texts:
-                    texts.append(f"=== {pdf_path.name} ===\n" + "\n".join(page_texts))
-                    logger.info("Loaded PDF", file=pdf_path.name, pages=len(page_texts))
+                    texts.append(f"=== {file['name']} ===\n" + "\n".join(page_texts))
+                    logger.info("Loaded PDF from Drive", file=file["name"], pages=len(page_texts))
             except Exception as e:
-                logger.error("Failed to load PDF", file=pdf_path.name, error=str(e))
+                logger.error("Failed to load PDF", file=file["name"], error=str(e))
 
         if not texts:
             return None
