@@ -4,7 +4,22 @@
       "Bash(./venv/bin/python:*)",
       "Bash(python3:*)",
       "Bash(source venv/bin/activate)",
-      "Bash(python scripts/test_conversation.py:*)"
+      "Bash(python scripts/test_conversation.py:*)",
+      "Bash(git push)",
+      "Bash(npx tsc:*)",
+      "Bash(git checkout:*)",
+      "Bash(npx vercel:*)",
+      "Bash(.venv/bin/pip install:*)",
+      "Bash(.venv/bin/python3 -c \":*)",
+      "Bash(npx vercel@50.15.1 --prod)",
+      "Bash(npx vercel@50.15.1 --prod --yes)",
+      "Bash(npx vercel@50.15.1 alias list)",
+      "Bash(npx vercel@50.15.1 alias set web-4deqxjibd-andrews-projects-d77567d6.vercel.app rv-fund-web.vercel.app)",
+      "Bash(npm run:*)",
+      "Bash(node_modules/.bin/tsc --noEmit)",
+      "Bash(npm install:*)",
+      "Bash(npx vercel@50.15.1 alias set web-rc8e4m4d9-andrews-projects-d77567d6.vercel.app rv-fund-web.vercel.app)",
+      "Bash(npx vercel@50.15.1 alias set web-keacad6d5-andrews-projects-d77567d6.vercel.app rv-fund-web.vercel.app)"
     ]
   }
 }
