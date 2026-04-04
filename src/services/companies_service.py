@@ -1,9 +1,17 @@
 """
 In-memory company search service backed by a static CSV export from Affinity.
+Loads from Google Drive when AFFINITY_DRIVE_FILE_ID is set, falls back to local file.
 """
 
+import io
 import os
+
 import pandas as pd
+from google.oauth2.service_account import Credentials
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaIoBaseDownload
+
+from config.settings import settings
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -40,15 +48,32 @@ class CompaniesService:
         self._load()
 
     def _load(self):
-        csv_path = os.path.join(os.path.dirname(__file__), "..", "..", "data", "affinity.csv")
-        csv_path = os.path.normpath(csv_path)
-
-        if not os.path.exists(csv_path):
-            logger.warning("Affinity CSV not found", path=csv_path)
-            return
-
-        df = pd.read_csv(csv_path, encoding="utf-8-sig", low_memory=False)
-        logger.info("Loaded raw CSV", rows=len(df), columns=len(df.columns))
+        if settings.affinity_drive_file_id:
+            try:
+                credentials = Credentials.from_service_account_file(
+                    settings.google_credentials_file,
+                    scopes=["https://www.googleapis.com/auth/drive.readonly"],
+                )
+                drive = build("drive", "v3", credentials=credentials, cache_discovery=False)
+                request = drive.files().get_media(fileId=settings.affinity_drive_file_id)
+                fh = io.BytesIO()
+                downloader = MediaIoBaseDownload(fh, request)
+                done = False
+                while not done:
+                    _, done = downloader.next_chunk()
+                fh.seek(0)
+                df = pd.read_csv(fh, encoding="utf-8-sig", low_memory=False)
+                logger.info("Loaded Affinity CSV from Google Drive", rows=len(df), columns=len(df.columns))
+            except Exception as e:
+                logger.error("Failed to load Affinity CSV from Google Drive", error=str(e))
+                return
+        else:
+            csv_path = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "..", "data", "affinity.csv"))
+            if not os.path.exists(csv_path):
+                logger.warning("Affinity CSV not found", path=csv_path)
+                return
+            df = pd.read_csv(csv_path, encoding="utf-8-sig", low_memory=False)
+            logger.info("Loaded Affinity CSV from local file", rows=len(df), columns=len(df.columns))
 
         # --- Pre-filters ---
         # Keep only high / mid level of connection

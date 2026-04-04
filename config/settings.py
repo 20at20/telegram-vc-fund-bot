@@ -75,6 +75,11 @@ class Settings(BaseSettings):
         default="", description="Google Drive folder ID for Fund II LP documents"
     )
 
+    # Affinity CRM export — Google Drive file ID for the CSV
+    affinity_drive_file_id: str = Field(
+        default="", description="Google Drive file ID for Affinity CSV export"
+    )
+
     # Web App Configuration
     web_password: str = Field(
         default="changeme", description="Password for web chat UI"
