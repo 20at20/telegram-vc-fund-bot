@@ -18,6 +18,7 @@ from src.services.sheets_service import sheets_service
 from src.services.companies_service import companies_service
 from src.services.response_generator import response_generator
 from src.services.pdf_service import pdf_service
+from src.services.openai_service import openai_service
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
