@@ -74,6 +74,9 @@ class PDFService:
             )
             return None
 
+        # Put the Fundraising Deck first — it's the primary source of truth
+        files.sort(key=lambda f: (0 if "fundraising deck" in f["name"].lower() else 1, f["name"]))
+
         texts = []
         for file in files:
             try:
