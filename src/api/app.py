@@ -2,7 +2,9 @@
 FastAPI web app — exposes the bot's intelligence via HTTP for the React frontend.
 """
 
+import asyncio
 import secrets
+from contextlib import asynccontextmanager
 from typing import List, Dict, Any, Optional
 
 import pandas as pd
@@ -173,8 +175,16 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
 
 # ── App factory ────────────────────────────────────────────────────────────────
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Preload LP docs in the background at startup so the first user doesn't wait
+    loop = asyncio.get_event_loop()
+    loop.run_in_executor(None, pdf_service.get_document_context)
+    yield
+
+
 def create_app() -> FastAPI:
-    app = FastAPI(title="RV Fund Bot API", docs_url=None, redoc_url=None)
+    app = FastAPI(title="RV Fund Bot API", docs_url=None, redoc_url=None, lifespan=lifespan)
 
     app.add_middleware(
         CORSMiddleware,
