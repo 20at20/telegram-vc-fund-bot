@@ -19,7 +19,7 @@ from src.services.data_processor import data_processor
 from src.services.sheets_service import sheets_service
 from src.services.companies_service import companies_service
 from src.services.response_generator import response_generator
-from src.services.pdf_service import pdf_service
+from src.services.obsidian_service import obsidian_service
 from src.services.openai_service import openai_service
 from src.utils.logger import get_logger
 
@@ -177,9 +177,9 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Preload LP docs in the background at startup so the first user doesn't wait
+    # Preload vault in the background at startup so the first user doesn't wait
     loop = asyncio.get_event_loop()
-    loop.run_in_executor(None, pdf_service.get_document_context)
+    loop.run_in_executor(None, obsidian_service.get_document_context)
     yield
 
 
@@ -314,7 +314,7 @@ def create_app() -> FastAPI:
     @app.post("/api/lp-chat", response_model=LPChatResponse)
     async def lp_chat(body: LPChatRequest, _token: str = Depends(verify_token)):
         try:
-            doc_context = pdf_service.get_document_context()
+            doc_context = obsidian_service.get_document_context()
 
             if not doc_context:
                 return LPChatResponse(
