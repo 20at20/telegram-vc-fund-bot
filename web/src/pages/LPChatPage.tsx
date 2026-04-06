@@ -113,7 +113,7 @@ export default function LPChatPage({ token, onLogout, onBack }: Props) {
     } finally {
       setLoading(false)
       setStreaming(false)
-      inputRef.current?.focus()
+      setTimeout(() => inputRef.current?.focus(), 0)
     }
   }
 
