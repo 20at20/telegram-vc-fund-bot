@@ -119,15 +119,15 @@ class CompaniesService:
         self.df = df
 
         # --- Build filter options ---
-        # Split semicolon-separated industries into unique individual values
+        # Count companies per industry, keep only those with >= 5
         if "Industry" in df.columns:
-            all_industries = set()
-            for val in df["Industry"].unique():
+            industry_counts: dict[str, int] = {}
+            for val in df["Industry"]:
                 for part in str(val).split(";"):
                     part = part.strip()
                     if part:
-                        all_industries.add(part)
-            industries_list = sorted(all_industries)
+                        industry_counts[part] = industry_counts.get(part, 0) + 1
+            industries_list = sorted(k for k, v in industry_counts.items() if v >= 5)
         else:
             industries_list = []
 

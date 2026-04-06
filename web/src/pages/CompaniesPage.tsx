@@ -28,7 +28,6 @@ export default function CompaniesPage({ token, onLogout, onBack }: Props) {
   const [countryFilter, setCountryFilter] = useState('')
   const [stageFilter, setStageFilter] = useState('')
   const [filters, setFilters] = useState<Filters>({ industries: [], countries: [], stages: [] })
-  const [hasSearched, setHasSearched] = useState(false)
   const [page, setPage] = useState(0)
   const pageSize = 50
   const debounceRef = useRef<ReturnType<typeof setTimeout>>()
@@ -59,7 +58,6 @@ export default function CompaniesPage({ token, onLogout, onBack }: Props) {
       setLinkedin(data.linkedin || {})
       setTotal(data.total || 0)
       if (data.filters) setFilters(data.filters)
-      setHasSearched(true)
     } catch {
       setError('Failed to search companies.')
     } finally {
@@ -72,43 +70,24 @@ export default function CompaniesPage({ token, onLogout, onBack }: Props) {
     setPage(0)
   }, [search, industryFilter, countryFilter, stageFilter])
 
-  // Debounced search
+  // Debounced search — runs on mount and whenever filters/page change
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
-
-    // Don't auto-search on empty query with no filters
-    if (!search && !industryFilter && !countryFilter && !stageFilter) {
-      if (!hasSearched) return
-    }
 
     debounceRef.current = setTimeout(() => {
       fetchCompanies(search, industryFilter, countryFilter, stageFilter, page * pageSize)
     }, 300)
 
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
-  }, [search, industryFilter, countryFilter, stageFilter, page, fetchCompanies, hasSearched])
+  }, [search, industryFilter, countryFilter, stageFilter, page, fetchCompanies])
 
-  // Load filters on mount (empty search to get filter values)
-  useEffect(() => {
-    const loadFilters = async () => {
-      try {
-        const res = await fetch(`${API}/api/companies?limit=0`, {
-          headers: { Authorization: `Bearer ${token}` },
-        })
-        if (res.ok) {
-          const data = await res.json()
-          if (data.filters) setFilters(data.filters)
-        }
-      } catch { /* ignore */ }
-    }
-    loadFilters()
-  }, [token])
-
+  const HIDDEN_COLUMNS = new Set(['People', 'Last Contact'])
+  const visibleColumns = columns.filter(c => !HIDDEN_COLUMNS.has(c))
   const nameCol = columns.find(c => c.toLowerCase() === 'name') || ''
 
   const colWidths: Record<string, string> = {
     'Name': '180px',
-    'Description': '400px',
+    'Description': '600px',
     'Industry': '200px',
     'Location (Country)': '150px',
     'Investment Stage': '150px',
@@ -118,18 +97,11 @@ export default function CompaniesPage({ token, onLogout, onBack }: Props) {
     'Last Funding Amount (USD)': '160px',
     'Last Funding Date': '120px',
     'Total Funding Amount (USD)': '160px',
-    'People': '350px',
-    'Last Contact': '120px',
   }
-  const colWidth = (col: string) => colWidths[col] || '100px'
-  const tableWidth = columns.reduce((sum, col) => {
+  const colWidth = (col: string) => colWidths[col] || '120px'
+  const tableWidth = visibleColumns.reduce((sum, col) => {
     return sum + parseInt(colWidth(col))
   }, 0)
-
-  const isWrapColumn = (col: string) => {
-    const lower = col.toLowerCase()
-    return lower.includes('descri') || lower.includes('investors') || lower.includes('people')
-  }
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -215,7 +187,7 @@ export default function CompaniesPage({ token, onLogout, onBack }: Props) {
             </select>
           )}
 
-          {hasSearched && !loading && (
+          {!loading && (
             <span className="text-xs font-bold uppercase tracking-widest text-gray-400">
               {page * pageSize + 1}–{Math.min((page + 1) * pageSize, total)} of {total}
             </span>
@@ -234,20 +206,18 @@ export default function CompaniesPage({ token, onLogout, onBack }: Props) {
             </div>
           ) : error ? (
             <p className="text-center text-gray-400 py-12">{error}</p>
-          ) : !hasSearched ? (
-            <p className="text-center text-gray-400 py-12">Search for companies or select a filter to get started.</p>
           ) : rows.length === 0 ? (
             <p className="text-center text-gray-400 py-12">No companies match your search.</p>
           ) : (
             <table className="text-sm border-collapse" style={{ tableLayout: 'fixed', width: `${tableWidth}px` }}>
               <colgroup>
-                {columns.map(col => (
+                {visibleColumns.map(col => (
                   <col key={col} style={{ width: colWidth(col) }} />
                 ))}
               </colgroup>
               <thead>
                 <tr>
-                  {columns.map(col => (
+                  {visibleColumns.map(col => (
                     <th
                       key={col}
                       className="text-left px-3 py-2 font-bold uppercase tracking-wider text-xs text-gray-500 border-b-2"
@@ -261,14 +231,11 @@ export default function CompaniesPage({ token, onLogout, onBack }: Props) {
               <tbody>
                 {rows.map((row, i) => (
                   <tr key={i} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                    {columns.map(col => (
+                    {visibleColumns.map(col => (
                       <td
                         key={col}
                         className="px-3 py-2 text-gray-700"
-                        style={isWrapColumn(col)
-                          ? { overflowWrap: 'break-word', wordBreak: 'break-word' }
-                          : { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }
-                        }
+                        style={{ overflowWrap: 'break-word', wordBreak: 'break-word' }}
                       >
                         {col === nameCol ? (
                           <span className="flex items-center gap-1.5">
@@ -311,7 +278,7 @@ export default function CompaniesPage({ token, onLogout, onBack }: Props) {
         </div>
 
         {/* Pagination */}
-        {hasSearched && total > pageSize && (
+        {total > pageSize && (
           <div className="flex items-center justify-center gap-4 py-4">
             <button
               onClick={() => setPage(p => p - 1)}
