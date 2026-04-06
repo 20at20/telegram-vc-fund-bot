@@ -44,7 +44,7 @@ export default function MessageBubble({ role, content, queryType, structuredData
 
     // Strip empty bullet points (lines with only a list marker and whitespace)
     const cleaned = content
-      .replace(/^[\-\*\+]\s*$/gm, '')
+      .replace(/^[ \t]*[\-\*\+][ \t]*$/gm, '')  // empty list markers (with optional surrounding spaces)
       .replace(/\n{3,}/g, '\n\n')
       .trim()
 

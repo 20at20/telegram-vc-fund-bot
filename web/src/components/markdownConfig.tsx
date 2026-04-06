@@ -8,5 +8,11 @@ export const markdownComponents: Components = {
   ),
   ul: ({ children }) => <ul className="list-disc list-inside space-y-1 my-2">{children}</ul>,
   ol: ({ children }) => <ol className="list-decimal list-inside space-y-1 my-2">{children}</ol>,
-  li: ({ children }) => <li className="text-gray-700">{children}</li>,
+  li: ({ children }) => {
+    const text = Array.isArray(children)
+      ? children.map(c => (typeof c === 'string' ? c : '')).join('')
+      : typeof children === 'string' ? children : ''
+    if (!text.trim()) return null
+    return <li className="text-gray-700">{children}</li>
+  },
 }

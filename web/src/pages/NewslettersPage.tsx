@@ -8,6 +8,9 @@ interface Newsletter {
 }
 
 const newsletters: Newsletter[] = [
+  { id: 'mar-2026', title: 'March 2026', date: 'Mar 2026', url: 'https://archive.sendpul.se/v/5dkqd/9z0a/' },
+  { id: 'feb-2026', title: 'February 2026', date: 'Feb 2026', url: 'https://archive.sendpul.se/v/5dkqd/98td/' },
+  { id: 'jan-2026', title: 'January 2026', date: 'Jan 2026', url: 'https://archive.sendpul.se/v/5dkqd/8nla/' },
   { id: 'dec-2025', title: 'December 2025', date: 'Dec 2025', url: 'https://archive.sendpul.se/v/5dkqd/7txx/' },
   { id: 'nov-2025', title: 'November 2025', date: 'Nov 2025', url: 'https://archive.sendpul.se/v/5dkqd/6zwx/' },
   { id: 'oct-2025', title: 'October 2025', date: 'Oct 2025', url: 'https://archive.sendpul.se/v/5dkqd/6436/' },
@@ -20,7 +23,7 @@ interface Props {
 
 export default function NewslettersPage({ onLogout, onBack }: Props) {
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    <div className="h-screen bg-white flex flex-col overflow-hidden">
       {/* Header */}
       <header className="flex items-center justify-between px-4 py-3 border-b-2 border-gray-100 bg-white">
         <div className="flex items-center gap-3">

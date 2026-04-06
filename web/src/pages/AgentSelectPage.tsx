@@ -149,7 +149,7 @@ interface Props {
 
 export default function AgentSelectPage({ onSelect, onLogout }: Props) {
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    <div className="h-screen bg-white flex flex-col overflow-hidden">
       {/* Header */}
       <header className="flex items-center justify-between px-6 py-4 border-b-2 border-gray-100 flex-shrink-0">
         <img src="/logo.png" alt="ROOSH" className="h-7" />
@@ -172,9 +172,6 @@ export default function AgentSelectPage({ onSelect, onLogout }: Props) {
           >
             Roosh LP Platform
           </h1>
-          <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-6">
-            Select a workspace
-          </p>
 
           <div className="flex flex-col gap-6">
             {sections.map(section => (
