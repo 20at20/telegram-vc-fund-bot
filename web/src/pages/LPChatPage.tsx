@@ -177,9 +177,8 @@ export default function LPChatPage({ token, onLogout, onBack }: Props) {
             onChange={e => setInput(e.target.value)}
             placeholder="Ask about Fund II..."
             disabled={loading || streaming}
-            className="flex-1 border-2 border-gray-200 border-r-0 px-4 py-3 text-gray-900 placeholder-gray-300 focus:outline-none transition disabled:opacity-50"
-            onFocus={e => (e.target.style.borderColor = '#1400FF')}
-            onBlur={e => (e.target.style.borderColor = '#e5e7eb')}
+            className="flex-1 border-2 border-r-0 px-4 py-3 text-gray-900 placeholder-gray-300 focus:outline-none transition disabled:opacity-50"
+            style={{ borderColor: '#1400FF' }}
           />
           <button
             type="submit"
