@@ -3,13 +3,15 @@ FastAPI web app — exposes the bot's intelligence via HTTP for the React fronte
 """
 
 import asyncio
+import json
 import secrets
 from contextlib import asynccontextmanager
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, AsyncIterator
 
 import pandas as pd
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 
@@ -313,28 +315,29 @@ def create_app() -> FastAPI:
             logger.error("Error in /api/companies", error=str(e), exc_info=True)
             raise HTTPException(status_code=500, detail="Error searching companies")
 
-    @app.post("/api/lp-chat", response_model=LPChatResponse)
+    @app.post("/api/lp-chat")
     async def lp_chat(body: LPChatRequest, _token: str = Depends(verify_token)):
-        try:
-            deck_context = pdf_service.get_deck_context()
-            wiki_context = obsidian_service.get_document_context()
+        deck_context = pdf_service.get_deck_context()
+        wiki_context = obsidian_service.get_document_context()
 
-            if not deck_context and not wiki_context:
-                return LPChatResponse(
-                    response="Fund documents haven't been loaded yet — please contact the team directly."
-                )
+        if not deck_context and not wiki_context:
+            async def no_docs() -> AsyncIterator[str]:
+                msg = "Fund documents haven't been loaded yet — please contact the team directly."
+                yield f"data: {json.dumps({'c': msg})}\n\n"
+                yield "data: [DONE]\n\n"
+            return StreamingResponse(no_docs(), media_type="text/event-stream")
 
-            context_parts = []
-            if deck_context:
-                context_parts.append(f"=== PRIMARY SOURCE: FUNDRAISING DECK (full text) ===\n{deck_context}")
-            if wiki_context:
-                context_parts.append(f"=== SUPPLEMENTARY SOURCE: FUND KNOWLEDGE BASE ===\n{wiki_context}")
-            combined_context = "\n\n".join(context_parts)
+        context_parts = []
+        if deck_context:
+            context_parts.append(f"=== PRIMARY SOURCE: FUNDRAISING DECK (full text) ===\n{deck_context}")
+        if wiki_context:
+            context_parts.append(f"=== SUPPLEMENTARY SOURCE: FUND KNOWLEDGE BASE ===\n{wiki_context}")
+        combined_context = "\n\n".join(context_parts)
 
-            messages = [
-                {
-                    "role": "system",
-                    "content": f"""You are a data-focused assistant for LP investors of Fund II by ROOSH Ventures.
+        messages = [
+            {
+                "role": "system",
+                "content": f"""You are a data-focused assistant for LP investors of Fund II by ROOSH Ventures.
 
 RULES:
 - Answer using ONLY data and facts found in the documents below. Do not add context, commentary, or information from your own knowledge.
@@ -346,25 +349,33 @@ RULES:
 
 FUND DOCUMENTS:
 {combined_context}""",
-                }
-            ]
+            }
+        ]
 
-            if body.conversation_history:
-                messages.extend(body.conversation_history[-6:])
+        if body.conversation_history:
+            messages.extend(body.conversation_history[-6:])
 
-            messages.append({"role": "user", "content": body.message})
+        messages.append({"role": "user", "content": body.message})
 
-            response = await openai_service.client.chat.completions.create(
-                model=openai_service.model,
-                messages=messages,
-                temperature=0.4,
-                max_tokens=1000,
-            )
+        async def stream_response() -> AsyncIterator[str]:
+            try:
+                stream = await openai_service.client.chat.completions.create(
+                    model=openai_service.model,
+                    messages=messages,
+                    temperature=0.4,
+                    max_tokens=1000,
+                    stream=True,
+                )
+                async for chunk in stream:
+                    delta = chunk.choices[0].delta.content
+                    if delta:
+                        yield f"data: {json.dumps({'c': delta})}\n\n"
+                yield "data: [DONE]\n\n"
+            except Exception as e:
+                logger.error("Error streaming lp-chat", error=str(e), exc_info=True)
+                yield f"data: {json.dumps({'c': 'Sorry, something went wrong. Please try again.'})}\n\n"
+                yield "data: [DONE]\n\n"
 
-            return LPChatResponse(response=response.choices[0].message.content)
-
-        except Exception as e:
-            logger.error("Error in /api/lp-chat", error=str(e), exc_info=True)
-            raise HTTPException(status_code=500, detail="Internal error processing your query")
+        return StreamingResponse(stream_response(), media_type="text/event-stream")
 
     return app

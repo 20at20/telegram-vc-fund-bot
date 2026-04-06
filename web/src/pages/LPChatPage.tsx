@@ -35,6 +35,7 @@ export default function LPChatPage({ token, onLogout, onBack }: Props) {
   ])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
+  const [streaming, setStreaming] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -43,7 +44,7 @@ export default function LPChatPage({ token, onLogout, onBack }: Props) {
 
   const sendMessage = async (text: string) => {
     const trimmed = text.trim()
-    if (!trimmed || loading) return
+    if (!trimmed || loading || streaming) return
 
     setMessages(prev => [...prev, { role: 'user', content: trimmed }])
     setInput('')
@@ -69,8 +70,40 @@ export default function LPChatPage({ token, onLogout, onBack }: Props) {
         return
       }
 
-      const data = await res.json()
-      setMessages(prev => [...prev, { role: 'assistant', content: data.response }])
+      if (!res.body) throw new Error('No response body')
+
+      const reader = res.body.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ''
+
+      // Add empty assistant message — will be filled token by token
+      setMessages(prev => [...prev, { role: 'assistant', content: '' }])
+      setLoading(false)
+      setStreaming(true)
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() ?? ''
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue
+          const payload = line.slice(6)
+          if (payload === '[DONE]') break
+          try {
+            const { c } = JSON.parse(payload)
+            if (c) {
+              setMessages(prev => {
+                const last = prev[prev.length - 1]
+                return [...prev.slice(0, -1), { ...last, content: last.content + c }]
+              })
+            }
+          } catch {}
+        }
+      }
     } catch {
       setMessages(prev => [
         ...prev,
@@ -78,6 +111,7 @@ export default function LPChatPage({ token, onLogout, onBack }: Props) {
       ])
     } finally {
       setLoading(false)
+      setStreaming(false)
     }
   }
 
@@ -122,7 +156,7 @@ export default function LPChatPage({ token, onLogout, onBack }: Props) {
             content={msg.content}
           />
         ))}
-        {loading && <TypingIndicator />}
+        {loading && !streaming && <TypingIndicator />}
 
         {showWelcomeChips && (
           <SuggestionChips
@@ -142,14 +176,14 @@ export default function LPChatPage({ token, onLogout, onBack }: Props) {
             value={input}
             onChange={e => setInput(e.target.value)}
             placeholder="Ask about Fund II..."
-            disabled={loading}
+            disabled={loading || streaming}
             className="flex-1 border-2 border-gray-200 border-r-0 px-4 py-3 text-gray-900 placeholder-gray-300 focus:outline-none transition disabled:opacity-50"
             onFocus={e => (e.target.style.borderColor = '#1400FF')}
             onBlur={e => (e.target.style.borderColor = '#e5e7eb')}
           />
           <button
             type="submit"
-            disabled={loading || !input.trim()}
+            disabled={loading || streaming || !input.trim()}
             className="text-white px-5 py-3 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed flex items-center"
             style={{ backgroundColor: '#1400FF' }}
           >
