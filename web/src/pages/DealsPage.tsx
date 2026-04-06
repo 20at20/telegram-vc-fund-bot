@@ -121,17 +121,11 @@ export default function DealsPage({ token, onLogout, onBack }: Props) {
     columns.find(c => c.toLowerCase().includes('company')) || '',
   [columns])
 
-  // Identify text-heavy columns that should wrap instead of expanding
-  const isWrapColumn = (col: string) => {
-    const lower = col.toLowerCase()
-    return lower.includes('descri') || lower.includes('why') || lower.includes('interesting')
-  }
-
   // Fixed column widths so table-layout: fixed distributes space correctly
   const colWidth = (col: string) => {
     const lower = col.toLowerCase()
-    if (lower.includes('why') || lower.includes('interesting')) return '30%'
-    if (lower.includes('descri')) return '24%'
+    if (lower.includes('descri')) return '32%'
+    if (lower.includes('why') || lower.includes('interesting')) return '20%'
     if (lower.includes('company')) return '10%'
     if (lower.includes('industry')) return '9%'
     if (lower.includes('round') && lower.includes('size')) return '7%'
@@ -262,7 +256,7 @@ export default function DealsPage({ token, onLogout, onBack }: Props) {
                   {columns.map(col => (
                     <th
                       key={col}
-                      className="text-left px-3 py-2 font-bold uppercase tracking-wider text-xs text-gray-500 border-b-2 whitespace-nowrap overflow-hidden text-ellipsis"
+                      className="text-left px-3 py-2 font-bold uppercase tracking-wider text-xs text-gray-500 border-b-2"
                       style={{ borderBottomColor: '#1400FF' }}
                     >
                       {col}
@@ -284,10 +278,7 @@ export default function DealsPage({ token, onLogout, onBack }: Props) {
                         <td
                           key={col}
                           className="px-3 py-2 text-gray-700"
-                          style={isWrapColumn(col)
-                            ? { overflowWrap: 'break-word', wordBreak: 'break-word' }
-                            : { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }
-                          }
+                          style={{ overflowWrap: 'break-word', wordBreak: 'break-word' }}
                         >
                           {col === companyCol && links[(row[col] || '').trim()] ? (
                             <a
