@@ -149,13 +149,25 @@ export default function LPChatPage({ token, onLogout, onBack }: Props) {
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4 max-w-3xl w-full mx-auto">
-        {messages.map((msg, i) => (
-          <MessageBubble
-            key={i}
-            role={msg.role}
-            content={msg.content}
-          />
-        ))}
+        {messages.map((msg, i) => {
+          const isThinking = streaming && i === messages.length - 1 && msg.role === 'assistant' && msg.content === ''
+          if (isThinking) {
+            return (
+              <div key={i} className="flex justify-start">
+                <div className="w-7 h-7 flex items-center justify-center mr-2 mt-1 flex-shrink-0" style={{ backgroundColor: '#1400FF' }}>
+                  <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                      d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                </div>
+                <div className="max-w-[80%] px-4 py-3 text-sm bg-gray-50 border-l-2" style={{ borderLeftColor: '#1400FF' }}>
+                  <em className="text-gray-400">Thinking...</em>
+                </div>
+              </div>
+            )
+          }
+          return <MessageBubble key={i} role={msg.role} content={msg.content} />
+        })}
         {loading && !streaming && <TypingIndicator />}
 
         {showWelcomeChips && (

@@ -42,9 +42,15 @@ export default function MessageBubble({ role, content, queryType, structuredData
       }
     }
 
+    // Strip empty bullet points (lines with only a list marker and whitespace)
+    const cleaned = content
+      .replace(/^[\-\*\+]\s*$/gm, '')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim()
+
     return (
       <ReactMarkdown components={markdownComponents}>
-        {content}
+        {cleaned}
       </ReactMarkdown>
     )
   }
