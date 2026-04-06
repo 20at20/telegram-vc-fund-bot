@@ -114,7 +114,26 @@ class CompaniesService:
                 seen.add(col)
 
         df = df[keep].copy()
+
+        # --- Format numeric columns before converting to str ---
+        for col in ["Year Founded", "Number of Employees"]:
+            if col in df.columns:
+                df[col] = pd.to_numeric(df[col], errors="coerce").apply(
+                    lambda x: str(int(x)) if pd.notna(x) else ""
+                )
+
+        for col in ["Last Funding Amount (USD)", "Total Funding Amount (USD)"]:
+            if col in df.columns:
+                df[col] = pd.to_numeric(df[col], errors="coerce").apply(
+                    lambda x: f"{int(x):,}" if pd.notna(x) else ""
+                )
+
         df = df.fillna("").astype(str)
+
+        # --- Drop rows with no description ---
+        if "Description" in df.columns:
+            df = df[df["Description"].str.strip().ne("").ne("nan")]
+
         df = df.reset_index(drop=True)
         self.df = df
 
@@ -159,14 +178,15 @@ class CompaniesService:
         """Search and filter companies, returning up to `limit` rows starting at `offset`."""
         df = self.df
 
-        # Text search across key columns
+        # Text search — name matches first, then other column matches
         if query:
             q = query.lower()
-            mask = pd.Series(False, index=df.index)
+            name_mask = df["Name"].str.lower().str.contains(q, na=False) if "Name" in df.columns else pd.Series(False, index=df.index)
+            other_mask = pd.Series(False, index=df.index)
             for col in SEARCH_COLUMNS:
-                if col in df.columns:
-                    mask = mask | df[col].str.lower().str.contains(q, na=False)
-            df = df[mask]
+                if col in df.columns and col != "Name":
+                    other_mask = other_mask | df[col].str.lower().str.contains(q, na=False)
+            df = pd.concat([df[name_mask], df[other_mask & ~name_mask]])
 
         # Dropdown filters (industry uses contains since values are semicolon-separated)
         if industry and "Industry" in df.columns:
