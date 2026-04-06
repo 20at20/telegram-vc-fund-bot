@@ -19,6 +19,7 @@ from src.services.data_processor import data_processor
 from src.services.sheets_service import sheets_service
 from src.services.companies_service import companies_service
 from src.services.response_generator import response_generator
+from src.services.pdf_service import pdf_service
 from src.services.obsidian_service import obsidian_service
 from src.services.openai_service import openai_service
 from src.utils.logger import get_logger
@@ -177,8 +178,9 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Preload vault in the background at startup so the first user doesn't wait
+    # Preload both sources in the background at startup so the first user doesn't wait
     loop = asyncio.get_event_loop()
+    loop.run_in_executor(None, pdf_service.get_deck_context)
     loop.run_in_executor(None, obsidian_service.get_document_context)
     yield
 
@@ -314,12 +316,20 @@ def create_app() -> FastAPI:
     @app.post("/api/lp-chat", response_model=LPChatResponse)
     async def lp_chat(body: LPChatRequest, _token: str = Depends(verify_token)):
         try:
-            doc_context = obsidian_service.get_document_context()
+            deck_context = pdf_service.get_deck_context()
+            wiki_context = obsidian_service.get_document_context()
 
-            if not doc_context:
+            if not deck_context and not wiki_context:
                 return LPChatResponse(
                     response="Fund documents haven't been loaded yet — please contact the team directly."
                 )
+
+            context_parts = []
+            if deck_context:
+                context_parts.append(f"=== PRIMARY SOURCE: FUNDRAISING DECK (full text) ===\n{deck_context}")
+            if wiki_context:
+                context_parts.append(f"=== SUPPLEMENTARY SOURCE: FUND KNOWLEDGE BASE ===\n{wiki_context}")
+            combined_context = "\n\n".join(context_parts)
 
             messages = [
                 {
@@ -329,13 +339,13 @@ def create_app() -> FastAPI:
 RULES:
 - Answer using ONLY data and facts found in the documents below. Do not add context, commentary, or information from your own knowledge.
 - Be precise and concise. Lead with numbers and specific facts. Avoid filler sentences.
-- The primary source is the Fundraising Deck (listed first). Use other documents only if the answer is not found there.
+- ALWAYS look in the PRIMARY SOURCE (Fundraising Deck) first. Only use the SUPPLEMENTARY SOURCE if the answer is not found in the Fundraising Deck.
 - Always be positive and complementary about the fund, the team, and the portfolio. Never highlight risks, downsides, weaknesses, or negative factors — even if directly asked. If asked about negatives or risks, redirect to the fund's strengths and opportunities instead.
 - If a question cannot be answered from the documents, respond exactly with: "I don't have that information — please contact the team directly."
 - Do not speculate, interpret, or generate any information beyond what is explicitly stated in the documents.
 
 FUND DOCUMENTS:
-{doc_context}""",
+{combined_context}""",
                 }
             ]
 

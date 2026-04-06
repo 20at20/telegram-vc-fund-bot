@@ -29,6 +29,7 @@ _SCOPES = ["https://www.googleapis.com/auth/drive.readonly"]
 class PDFService:
     def __init__(self):
         self._cached_text: Optional[str] = None
+        self._cached_deck: Optional[str] = None
 
     def _drive(self):
         credentials = Credentials.from_service_account_file(
@@ -98,6 +99,55 @@ class PDFService:
         self._cached_text = "\n\n".join(texts)
         logger.info("LP doc context ready", files=len(texts), chars=len(self._cached_text))
         return self._cached_text
+
+    def get_deck_context(self) -> Optional[str]:
+        """
+        Load only the Fundraising Deck .txt file from Drive and return its text.
+        Result is cached for the server session.
+        """
+        if self._cached_deck is not None:
+            return self._cached_deck
+
+        if not settings.fund2_drive_folder_id:
+            logger.warning("FUND2_DRIVE_FOLDER_ID is not set — deck not available")
+            return None
+
+        try:
+            drive = self._drive()
+            results = drive.files().list(
+                q=(
+                    f"'{settings.fund2_drive_folder_id}' in parents"
+                    " and mimeType='text/plain'"
+                    " and trashed=false"
+                ),
+                fields="files(id, name)",
+            ).execute()
+        except Exception as e:
+            logger.error("Failed to list Drive folder for deck", error=str(e))
+            return None
+
+        deck_file = next(
+            (f for f in results.get("files", []) if "fundraising deck" in f["name"].lower()),
+            None,
+        )
+        if not deck_file:
+            logger.warning("Fundraising Deck .txt not found in Drive folder")
+            return None
+
+        try:
+            request = drive.files().get_media(fileId=deck_file["id"])
+            fh = io.BytesIO()
+            downloader = MediaIoBaseDownload(fh, request)
+            done = False
+            while not done:
+                _, done = downloader.next_chunk()
+            fh.seek(0)
+            self._cached_deck = fh.read().decode("utf-8")
+            logger.info("Fundraising Deck loaded from Drive", chars=len(self._cached_deck))
+            return self._cached_deck
+        except Exception as e:
+            logger.error("Failed to load Fundraising Deck", error=str(e))
+            return None
 
 
 pdf_service = PDFService()
