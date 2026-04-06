@@ -132,7 +132,8 @@ class CompaniesService:
 
         # --- Drop rows with no description ---
         if "Description" in df.columns:
-            df = df[df["Description"].str.strip().ne("").ne("nan")]
+            blank = {"", "nan", "none", "n/a", "na", "-"}
+            df = df[~df["Description"].str.strip().str.lower().isin(blank)]
 
         df = df.reset_index(drop=True)
         self.df = df
