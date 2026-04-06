@@ -37,6 +37,7 @@ export default function LPChatPage({ token, onLogout, onBack }: Props) {
   const [loading, setLoading] = useState(false)
   const [streaming, setStreaming] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -112,6 +113,7 @@ export default function LPChatPage({ token, onLogout, onBack }: Props) {
     } finally {
       setLoading(false)
       setStreaming(false)
+      inputRef.current?.focus()
     }
   }
 
@@ -161,7 +163,7 @@ export default function LPChatPage({ token, onLogout, onBack }: Props) {
                   </svg>
                 </div>
                 <div className="max-w-[80%] px-4 py-3 text-sm bg-gray-50 border-l-2" style={{ borderLeftColor: '#1400FF' }}>
-                  <em className="text-gray-400">Thinking...</em>
+                  <em className="text-gray-400 animate-pulse">Thinking...</em>
                 </div>
               </div>
             )
@@ -185,6 +187,7 @@ export default function LPChatPage({ token, onLogout, onBack }: Props) {
       <div className="border-t-2 border-gray-100 bg-white px-4 py-4">
         <form onSubmit={send} className="max-w-3xl mx-auto flex gap-0">
           <input
+            ref={inputRef}
             value={input}
             onChange={e => setInput(e.target.value)}
             placeholder="Ask about Fund II..."
