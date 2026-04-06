@@ -85,6 +85,9 @@ class Settings(BaseSettings):
         default="changeme", description="Password for web chat UI"
     )
 
+    # Resend — email delivery for deal submissions
+    resend_api_key: str = Field(default="", description="Resend API key for deal submission emails")
+
     # MCP Configuration
     mcp_config_file: str = Field(
         default="mcp_config.json", description="Path to MCP configuration file"

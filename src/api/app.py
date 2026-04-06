@@ -3,13 +3,15 @@ FastAPI web app — exposes the bot's intelligence via HTTP for the React fronte
 """
 
 import asyncio
+import base64
 import json
 import secrets
 from contextlib import asynccontextmanager
 from typing import List, Dict, Any, Optional, AsyncIterator
 
+import httpx
 import pandas as pd
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, Form, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -384,5 +386,51 @@ FUND DOCUMENTS:
                 yield "data: [DONE]\n\n"
 
         return StreamingResponse(stream_response(), media_type="text/event-stream")
+
+    @app.post("/api/submit_deal")
+    async def submit_deal(
+        company_name: str = Form(...),
+        available_info: str = Form(""),
+        thoughts: str = Form(""),
+        deck: UploadFile | None = File(None),
+        _token: str = Depends(verify_token),
+    ):
+        if not settings.resend_api_key:
+            raise HTTPException(status_code=503, detail="Email delivery is not configured")
+        try:
+            body_parts = [f"Company: {company_name}"]
+            if available_info:
+                body_parts.append(f"\nAvailable information:\n{available_info}")
+            if thoughts:
+                body_parts.append(f"\nThoughts:\n{thoughts}")
+
+            payload: Dict[str, Any] = {
+                "from": "Deal Submissions <onboarding@resend.dev>",
+                "to": ["at@roosh.vc"],
+                "subject": f"Deal submitted: {company_name}",
+                "text": "\n".join(body_parts),
+            }
+
+            if deck and deck.filename:
+                file_bytes = await deck.read()
+                payload["attachments"] = [{
+                    "filename": deck.filename,
+                    "content": base64.b64encode(file_bytes).decode(),
+                }]
+
+            async with httpx.AsyncClient() as client:
+                resp = await client.post(
+                    "https://api.resend.com/emails",
+                    json=payload,
+                    headers={"Authorization": f"Bearer {settings.resend_api_key}"},
+                    timeout=15,
+                )
+                resp.raise_for_status()
+
+            logger.info("Deal submission sent", company=company_name)
+            return {"success": True}
+        except Exception as e:
+            logger.error("Error in /api/submit_deal", error=str(e), exc_info=True)
+            raise HTTPException(status_code=500, detail="Failed to send deal submission")
 
     return app
