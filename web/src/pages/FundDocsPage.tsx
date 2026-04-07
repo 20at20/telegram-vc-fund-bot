@@ -19,7 +19,21 @@ function friendlyName(raw: string): string {
   if (lower.includes('fundraising') || lower.includes('deck')) return 'Fundraising Deck'
   if (lower.includes('memorandum') || lower.includes('offering')) return 'Offering Memorandum'
   if (lower.includes('m&a') || lower.includes('signed') || lower.includes('roosh vc -')) return 'M&A Agreement'
-  return raw.replace(/\.[^.]+$/, '') // strip extension as fallback
+  return raw.replace(/\.[^.]+$/, '')
+}
+
+const DOC_ORDER: Record<string, number> = {
+  'Fundraising Deck': 0,
+  'Offering Memorandum': 1,
+  'M&A Agreement': 2,
+}
+
+function sortDocs(docs: Doc[]): Doc[] {
+  return [...docs].sort((a, b) => {
+    const ai = DOC_ORDER[friendlyName(a.name)] ?? 99
+    const bi = DOC_ORDER[friendlyName(b.name)] ?? 99
+    return ai - bi
+  })
 }
 
 function docIcon() {
@@ -92,7 +106,7 @@ export default function FundDocsPage({ token, onLogout, onBack }: Props) {
             <p className="text-center text-gray-400 py-12">No documents found.</p>
           ) : (
             <div className="flex flex-col gap-3">
-              {docs.map(doc => (
+              {sortDocs(docs).map(doc => (
                 <a
                   key={doc.url}
                   href={doc.url}
