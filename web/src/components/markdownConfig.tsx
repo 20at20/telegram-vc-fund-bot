@@ -9,10 +9,12 @@ export const markdownComponents: Components = {
   ul: ({ children }) => <ul className="list-disc list-inside space-y-1 my-2">{children}</ul>,
   ol: ({ children }) => <ol className="list-decimal list-inside space-y-1 my-2">{children}</ol>,
   li: ({ children }) => {
-    const text = Array.isArray(children)
-      ? children.map(c => (typeof c === 'string' ? c : '')).join('')
-      : typeof children === 'string' ? children : ''
-    if (!text.trim()) return null
+    // Only suppress li when ALL children are empty/whitespace strings.
+    // If any child is a React element (bold, link, etc.) keep the item.
+    const allWhitespace = Array.isArray(children)
+      ? children.every(c => typeof c === 'string' && !c.trim())
+      : typeof children === 'string' && !children.trim()
+    if (allWhitespace) return null
     return <li className="text-gray-700">{children}</li>
   },
 }
