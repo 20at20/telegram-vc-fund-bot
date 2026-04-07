@@ -9,6 +9,7 @@ import CompaniesPage from './pages/CompaniesPage'
 import ExpertsPage from './pages/ExpertsPage'
 import NewslettersPage from './pages/NewslettersPage'
 import SubmitDealPage from './pages/SubmitDealPage'
+import FundDocsPage from './pages/FundDocsPage'
 
 export default function App() {
   const [token, setToken] = useState<string | null>(
@@ -50,6 +51,10 @@ export default function App() {
 
   if (selectedAgent === 'companies') {
     return <CompaniesPage token={token} onLogout={handleLogout} onBack={handleBack} />
+  }
+
+  if (selectedAgent === 'fund-data') {
+    return <FundDocsPage token={token} onLogout={handleLogout} onBack={handleBack} />
   }
 
   if (selectedAgent === 'newsletters') {

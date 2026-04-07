@@ -4,8 +4,8 @@ FastAPI web app — exposes the bot's intelligence via HTTP for the React fronte
 
 import asyncio
 import base64
+import hashlib
 import json
-import secrets
 from contextlib import asynccontextmanager
 from typing import List, Dict, Any, Optional, AsyncIterator
 
@@ -30,10 +30,12 @@ from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
-# In-memory set of valid session tokens (reset on restart, fine for simple auth)
-_valid_tokens: set = set()
-
 security = HTTPBearer()
+
+
+def _make_token(password: str) -> str:
+    """Deterministic token derived from the password — survives server restarts."""
+    return hashlib.sha256(password.encode()).hexdigest()
 
 
 # ── Request / Response models ──────────────────────────────────────────────────
@@ -173,7 +175,7 @@ def _extract_previous_result_context(previous_result: Optional[Dict[str, Any]]) 
 # ── Auth helper ────────────────────────────────────────────────────────────────
 
 def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    if credentials.credentials not in _valid_tokens:
+    if credentials.credentials != _make_token(settings.web_password):
         raise HTTPException(status_code=401, detail="Invalid or expired token")
     return credentials.credentials
 
@@ -208,8 +210,7 @@ def create_app() -> FastAPI:
     async def login(body: AuthRequest):
         if body.password != settings.web_password:
             raise HTTPException(status_code=401, detail="Wrong password")
-        token = secrets.token_hex(32)
-        _valid_tokens.add(token)
+        token = _make_token(body.password)
         logger.info("Web login successful")
         return AuthResponse(token=token)
 
@@ -316,6 +317,34 @@ def create_app() -> FastAPI:
         except Exception as e:
             logger.error("Error in /api/companies", error=str(e), exc_info=True)
             raise HTTPException(status_code=500, detail="Error searching companies")
+
+    @app.get("/api/fund-docs-list")
+    async def fund_docs_list(_token: str = Depends(verify_token)):
+        """Return the PDF files in the Fund II Drive folder with their view URLs."""
+        if not settings.fund2_drive_folder_id:
+            return {"docs": []}
+        try:
+            drive = pdf_service._drive()
+            results = drive.files().list(
+                q=(
+                    f"'{settings.fund2_drive_folder_id}' in parents"
+                    " and mimeType='application/pdf'"
+                    " and trashed=false"
+                ),
+                fields="files(id, name)",
+                orderBy="name",
+            ).execute()
+            docs = [
+                {
+                    "name": f["name"],
+                    "url": f"https://drive.google.com/file/d/{f['id']}/view",
+                }
+                for f in results.get("files", [])
+            ]
+            return {"docs": docs}
+        except Exception as e:
+            logger.error("Error in /api/fund-docs-list", error=str(e), exc_info=True)
+            raise HTTPException(status_code=500, detail="Error fetching fund documents")
 
     @app.post("/api/lp-chat")
     async def lp_chat(body: LPChatRequest, _token: str = Depends(verify_token)):

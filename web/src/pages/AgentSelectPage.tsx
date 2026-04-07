@@ -30,6 +30,18 @@ const sections = [
         ),
         ready: true,
       },
+      {
+        id: 'fund-data',
+        name: 'Fund Data',
+        description: 'Access fund documents — deck, memorandum, and M&A agreement.',
+        icon: (
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+              d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+          </svg>
+        ),
+        ready: true,
+      },
     ],
   },
   {
