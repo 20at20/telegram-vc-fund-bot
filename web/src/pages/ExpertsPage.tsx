@@ -196,7 +196,7 @@ export default function ExpertsPage({ token, onLogout, onBack }: Props) {
       </div>
 
       {/* Table */}
-      <div className="flex-1 overflow-auto px-4 py-4">
+      <div className="flex-1 overflow-auto px-4 pb-4">
         <div className="max-w-6xl mx-auto">
           {loading ? (
             <div className="space-y-3">
@@ -220,8 +220,8 @@ export default function ExpertsPage({ token, onLogout, onBack }: Props) {
                   {columns.map(col => (
                     <th
                       key={col}
-                      className="text-left px-3 py-2 font-bold uppercase tracking-wider text-xs text-gray-500 border-b-2 whitespace-nowrap overflow-hidden text-ellipsis sticky top-0 bg-white z-10"
-                      style={{ borderBottomColor: '#1400FF' }}
+                      className="text-left px-3 py-2 font-bold uppercase tracking-wider text-xs text-gray-500 whitespace-nowrap overflow-hidden text-ellipsis sticky top-0 bg-white z-10"
+                      style={{ boxShadow: 'inset 0 -2px 0 #1400FF' }}
                     >
                       {col}
                     </th>
