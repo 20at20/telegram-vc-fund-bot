@@ -1,7 +1,4 @@
-import { useState, useEffect } from 'react'
 import PortfolioTicker from '../components/PortfolioTicker'
-
-const API = import.meta.env.VITE_API_URL || ''
 
 interface Props {
   token: string
@@ -9,34 +6,22 @@ interface Props {
   onBack: () => void
 }
 
-interface Doc {
-  name: string
-  url: string
-}
+const DECKS = [
+  {
+    id: 'long',
+    name: 'Long Deck',
+    description: 'Full fund presentation',
+    url: 'https://docsend.com/view/u48kk2mdzutvzmgx',
+  },
+  {
+    id: 'short',
+    name: 'Short Deck',
+    description: 'Summary fund presentation',
+    url: 'https://docsend.com/view/v8ykewmt85m7ag2h',
+  },
+]
 
-function friendlyName(raw: string): string {
-  const lower = raw.toLowerCase()
-  if (lower.includes('fundraising') || lower.includes('deck')) return 'Fundraising Deck'
-  if (lower.includes('memorandum') || lower.includes('offering')) return 'Offering Memorandum'
-  if (lower.includes('m&a') || lower.includes('signed') || lower.includes('roosh vc -')) return 'M&A Agreement'
-  return raw.replace(/\.[^.]+$/, '')
-}
-
-const DOC_ORDER: Record<string, number> = {
-  'Fundraising Deck': 0,
-  'Offering Memorandum': 1,
-  'M&A Agreement': 2,
-}
-
-function sortDocs(docs: Doc[]): Doc[] {
-  return [...docs].sort((a, b) => {
-    const ai = DOC_ORDER[friendlyName(a.name)] ?? 99
-    const bi = DOC_ORDER[friendlyName(b.name)] ?? 99
-    return ai - bi
-  })
-}
-
-function docIcon() {
+function deckIcon() {
   return (
     <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
@@ -45,29 +30,7 @@ function docIcon() {
   )
 }
 
-export default function FundDocsPage({ token, onLogout, onBack }: Props) {
-  const [docs, setDocs] = useState<Doc[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-
-  useEffect(() => {
-    const fetchDocs = async () => {
-      try {
-        const res = await fetch(`${API}/api/fund-docs-list`, {
-          headers: { Authorization: `Bearer ${token}` },
-        })
-        if (res.status === 401) { onLogout(); return }
-        const data = await res.json()
-        setDocs(data.docs || [])
-      } catch {
-        setError('Failed to load documents.')
-      } finally {
-        setLoading(false)
-      }
-    }
-    fetchDocs()
-  }, [token, onLogout])
-
+export default function FundDocsPage({ onLogout, onBack }: Props) {
   return (
     <div className="h-screen bg-white flex flex-col overflow-hidden">
       <header className="flex items-center justify-between px-4 py-3 border-b-2 border-gray-100 bg-white flex-shrink-0">
@@ -93,49 +56,35 @@ export default function FundDocsPage({ token, onLogout, onBack }: Props) {
       </header>
 
       <div className="flex-1 overflow-y-auto px-4 py-10">
-        <div className="max-w-xl mx-auto">
-          {loading ? (
-            <div className="space-y-3">
-              {[1, 2, 3].map(i => (
-                <div key={i} className="h-16 bg-gray-100 animate-pulse" />
-              ))}
-            </div>
-          ) : error ? (
-            <p className="text-center text-gray-400 py-12">{error}</p>
-          ) : docs.length === 0 ? (
-            <p className="text-center text-gray-400 py-12">No documents found.</p>
-          ) : (
-            <div className="flex flex-col gap-3">
-              {sortDocs(docs).map(doc => (
-                <a
-                  key={doc.url}
-                  href={doc.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-4 px-5 py-4 border-2 border-gray-100 hover:border-[#1400FF] transition-all group"
+        <div className="max-w-xl mx-auto flex flex-col gap-3">
+          {DECKS.map(deck => (
+            <a
+              key={deck.id}
+              href={deck.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-4 px-5 py-4 border-2 border-gray-100 hover:border-[#1400FF] transition-all group"
+            >
+              <div
+                className="w-10 h-10 flex items-center justify-center flex-shrink-0 text-white"
+                style={{ backgroundColor: '#1400FF' }}
+              >
+                {deckIcon()}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div
+                  style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+                  className="font-bold text-gray-900 text-sm"
                 >
-                  <div
-                    className="w-10 h-10 flex items-center justify-center flex-shrink-0 text-white"
-                    style={{ backgroundColor: '#1400FF' }}
-                  >
-                    {docIcon()}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div
-                      style={{ fontFamily: "'Space Grotesk', sans-serif" }}
-                      className="font-bold text-gray-900 text-sm"
-                    >
-                      {friendlyName(doc.name)}
-                    </div>
-                    <div className="text-xs text-gray-400 mt-0.5">PDF · Opens in Google Drive</div>
-                  </div>
-                  <svg className="w-4 h-4 text-gray-300 group-hover:text-[#1400FF] transition-colors flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                  </svg>
-                </a>
-              ))}
-            </div>
-          )}
+                  {deck.name}
+                </div>
+                <div className="text-xs text-gray-400 mt-0.5">{deck.description} · Opens in DocSend</div>
+              </div>
+              <svg className="w-4 h-4 text-gray-300 group-hover:text-[#1400FF] transition-colors flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+            </a>
+          ))}
         </div>
       </div>
 

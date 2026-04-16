@@ -48,7 +48,7 @@ export default function NewslettersPage({ onLogout, onBack }: Props) {
       </header>
 
       {/* Newsletter cards */}
-      <div className="flex-1 px-4 py-8">
+      <div className="flex-1 overflow-y-auto px-4 py-8">
         <div className="max-w-3xl mx-auto">
           <h1 className="text-3xl font-black uppercase tracking-tight text-gray-900 mb-2">Newsletters</h1>
           <p className="text-gray-400 text-sm uppercase tracking-widest font-medium mb-8">Monthly investor updates</p>

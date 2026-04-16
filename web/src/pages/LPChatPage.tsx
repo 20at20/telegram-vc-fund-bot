@@ -206,6 +206,9 @@ export default function LPChatPage({ token, onLogout, onBack }: Props) {
             </svg>
           </button>
         </form>
+        <p className="max-w-3xl mx-auto text-xs text-gray-400 mt-2 text-center">
+          This tool can make mistakes. Check important information with Roosh Ventures team.
+        </p>
       </div>
 
       <PortfolioTicker />

@@ -33,7 +33,7 @@ const sections = [
       {
         id: 'fund-data',
         name: 'Fund Data',
-        description: 'Access fund documents — deck, memorandum, and M&A agreement.',
+        description: 'Access the fund presentation decks — short and long versions.',
         icon: (
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
