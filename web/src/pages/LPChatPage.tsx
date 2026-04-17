@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, FormEvent } from 'react'
+import posthog from 'posthog-js'
 import MessageBubble from '../components/MessageBubble'
 import TypingIndicator from '../components/TypingIndicator'
 import PortfolioTicker from '../components/PortfolioTicker'
@@ -50,6 +51,7 @@ export default function LPChatPage({ token, onLogout, onBack }: Props) {
     setMessages(prev => [...prev, { role: 'user', content: trimmed }])
     setInput('')
     setLoading(true)
+    posthog.capture('chat_message_sent', { tool: 'fund-docs', message: trimmed })
 
     const history = messages.slice(-6).map(m => ({
       role: m.role,

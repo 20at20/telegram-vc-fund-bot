@@ -38,6 +38,26 @@ def _make_token(password: str) -> str:
     return hashlib.sha256(password.encode()).hexdigest()
 
 
+def _build_user_tokens() -> dict:
+    """Build {token: username} from LP_PASSWORDS setting, falling back to WEB_PASSWORD."""
+    mapping = {}
+    if settings.lp_passwords:
+        for entry in settings.lp_passwords.split(","):
+            entry = entry.strip()
+            if ":" in entry:
+                name, password = entry.split(":", 1)
+                name, password = name.strip(), password.strip()
+                if name and password:
+                    mapping[_make_token(password)] = name
+    if not mapping:
+        mapping[_make_token(settings.web_password)] = "admin"
+    return mapping
+
+
+# Built once at startup — {token: username}
+_user_tokens: dict = _build_user_tokens()
+
+
 # ── Request / Response models ──────────────────────────────────────────────────
 
 class AuthRequest(BaseModel):
@@ -45,6 +65,7 @@ class AuthRequest(BaseModel):
 
 class AuthResponse(BaseModel):
     token: str
+    username: str
 
 class ChatRequest(BaseModel):
     message: str
@@ -174,10 +195,11 @@ def _extract_previous_result_context(previous_result: Optional[Dict[str, Any]]) 
 
 # ── Auth helper ────────────────────────────────────────────────────────────────
 
-def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    if credentials.credentials != _make_token(settings.web_password):
+def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)) -> str:
+    username = _user_tokens.get(credentials.credentials)
+    if not username:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
-    return credentials.credentials
+    return username
 
 
 # ── App factory ────────────────────────────────────────────────────────────────
@@ -208,11 +230,12 @@ def create_app() -> FastAPI:
 
     @app.post("/api/auth", response_model=AuthResponse)
     async def login(body: AuthRequest):
-        if body.password != settings.web_password:
-            raise HTTPException(status_code=401, detail="Wrong password")
         token = _make_token(body.password)
-        logger.info("Web login successful")
-        return AuthResponse(token=token)
+        username = _user_tokens.get(token)
+        if not username:
+            raise HTTPException(status_code=401, detail="Wrong password")
+        logger.info("Web login successful", user=username)
+        return AuthResponse(token=token, username=username)
 
     @app.post("/api/chat", response_model=ChatResponse)
     async def chat(body: ChatRequest, _token: str = Depends(verify_token)):

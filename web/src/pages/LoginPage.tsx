@@ -4,7 +4,7 @@ import PortfolioTicker from '../components/PortfolioTicker'
 const API = import.meta.env.VITE_API_URL || ''
 
 interface Props {
-  onLogin: (token: string) => void
+  onLogin: (token: string, username: string) => void
 }
 
 export default function LoginPage({ onLogin }: Props) {
@@ -26,8 +26,8 @@ export default function LoginPage({ onLogin }: Props) {
         setError('Wrong password. Try again.')
         return
       }
-      const { token } = await res.json()
-      onLogin(token)
+      const { token, username } = await res.json()
+      onLogin(token, username)
     } catch {
       setError('Cannot reach the server. Check your connection.')
     } finally {

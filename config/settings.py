@@ -85,6 +85,12 @@ class Settings(BaseSettings):
         default="changeme", description="Password for web chat UI"
     )
 
+    # Per-LP passwords — format: "Alice:pass1, Bob:pass2"
+    # If set, takes priority over web_password for login
+    lp_passwords: str = Field(
+        default="", description="Per-user passwords in 'name:password' format, comma-separated"
+    )
+
     # Resend — email delivery for deal submissions
     resend_api_key: str = Field(default="", description="Resend API key for deal submission emails")
 
