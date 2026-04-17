@@ -86,6 +86,10 @@ class CompaniesService:
         if "Last Contact" in df.columns:
             df = df[df["Last Contact"].astype(str).str.strip().ne("").ne("nan") & df["Last Contact"].notna()]
 
+        # Drop companies located in Russia
+        if "Location (Country)" in df.columns:
+            df = df[df["Location (Country)"].astype(str).str.strip().str.lower() != "russia"]
+
         logger.info("After pre-filters", rows=len(df))
 
         # --- Extract links ---
@@ -147,7 +151,7 @@ class CompaniesService:
                     part = part.strip()
                     if part:
                         industry_counts[part] = industry_counts.get(part, 0) + 1
-            industries_list = sorted(k for k, v in industry_counts.items() if v >= 5)
+            industries_list = sorted(k for k, v in industry_counts.items() if v >= 20)
         else:
             industries_list = []
 
