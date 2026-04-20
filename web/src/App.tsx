@@ -8,7 +8,6 @@ import DealsPage from './pages/DealsPage'
 import AsksPage from './pages/AsksPage'
 import CompaniesPage from './pages/CompaniesPage'
 import ExpertsPage from './pages/ExpertsPage'
-import NewslettersPage from './pages/NewslettersPage'
 import SubmitDealPage from './pages/SubmitDealPage'
 import FundDocsPage from './pages/FundDocsPage'
 
@@ -73,11 +72,7 @@ export default function App() {
     return <FundDocsPage token={token} onLogout={handleLogout} onBack={handleBack} />
   }
 
-  if (selectedAgent === 'newsletters') {
-    return <NewslettersPage onLogout={handleLogout} onBack={handleBack} />
-  }
-
-  if (selectedAgent === 'submit-deal') {
+if (selectedAgent === 'submit-deal') {
     return <SubmitDealPage token={token} onLogout={handleLogout} onBack={handleBack} />
   }
 

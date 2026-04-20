@@ -17,23 +17,9 @@ const sections = [
         ready: true,
       },
       {
-        id: 'newsletters',
-        name: 'Newsletters',
-        description: 'Check our detailed monthly newsletters.',
-        icon: (
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-              d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14 2v6h6" />
-            <path strokeLinecap="round" strokeWidth={1.5} d="M16 13H8M16 17H8M10 9H8" />
-          </svg>
-        ),
-        ready: true,
-      },
-      {
         id: 'fund-data',
         name: 'Fund Data',
-        description: 'Access the fund presentation decks — short and long versions.',
+        description: 'Access fund decks and monthly newsletters.',
         icon: (
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
