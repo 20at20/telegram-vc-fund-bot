@@ -119,6 +119,7 @@ export default function CompaniesPage({ token, onLogout, onBack }: Props) {
           </button>
           <img src="/logo.png" alt="ROOSH" className="h-7" />
           <span className="font-black uppercase tracking-widest text-sm text-gray-900">Companies</span>
+          <span className="text-xs italic text-gray-400 font-normal normal-case tracking-normal">(Ask Roosh Ventures team for the direct intros to company/person)</span>
         </div>
         <button
           onClick={onLogout}
