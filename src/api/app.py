@@ -198,7 +198,7 @@ def create_app() -> FastAPI:
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],  # Tightened per-domain after first deploy if needed
+        allow_origins=["https://rv-fund-web.vercel.app"],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

@@ -72,7 +72,7 @@ class Settings(BaseSettings):
 
     # Web App Configuration
     web_password: str = Field(
-        default="changeme", description="Password for web chat UI"
+        default="", description="Password for web chat UI"
     )
 
     # MCP Configuration
