@@ -24,19 +24,15 @@ class SheetsService:
     def _initialize_client(self):
         """Initialize gspread client with service account credentials."""
         try:
-            # Define the required scopes
             scopes = [
                 "https://www.googleapis.com/auth/spreadsheets.readonly",
                 "https://www.googleapis.com/auth/drive.readonly",
             ]
 
-            # Load credentials from file
-            credentials = Credentials.from_service_account_file(
+            self.credentials = Credentials.from_service_account_file(
                 settings.google_credentials_file, scopes=scopes
             )
-
-            # Initialize gspread client
-            self.client = gspread.authorize(credentials)
+            self.client = gspread.authorize(self.credentials)
 
             logger.info("Google Sheets client initialized successfully")
         except Exception as e:
@@ -327,6 +323,121 @@ class SheetsService:
             logger.error("Error loading asks data", error=str(e))
             raise
 
+    @cache_with_ttl(ttl=1800)  # 30-minute cache — Affinity CSV is uploaded manually
+    async def get_companies_data(self) -> tuple:
+        """
+        Download the latest Affinity CSV from Google Drive and return processed data.
+
+        Returns:
+            Tuple of (df, links, linkedin, filters)
+        """
+        import io
+        from googleapiclient.discovery import build
+        from googleapiclient.http import MediaIoBaseDownload
+
+        try:
+            if not settings.affinity_drive_folder_id:
+                logger.warning("No Affinity Drive folder ID configured")
+                return pd.DataFrame(), {}, {}, {}
+
+            drive = build("drive", "v3", credentials=self.credentials)
+
+            results = drive.files().list(
+                q=f"'{settings.affinity_drive_folder_id}' in parents and mimeType='text/csv' and trashed=false",
+                orderBy="modifiedTime desc",
+                pageSize=1,
+                fields="files(id, name)",
+            ).execute()
+
+            files = results.get("files", [])
+            if not files:
+                logger.warning("No CSV files found in Affinity Drive folder")
+                return pd.DataFrame(), {}, {}, {}
+
+            file_id = files[0]["id"]
+            logger.info("Downloading Affinity CSV from Drive", file_name=files[0]["name"])
+
+            request = drive.files().get_media(fileId=file_id)
+            buffer = io.BytesIO()
+            downloader = MediaIoBaseDownload(buffer, request)
+            done = False
+            while not done:
+                _, done = downloader.next_chunk()
+
+            buffer.seek(0)
+            df = pd.read_csv(buffer, encoding="utf-8-sig", low_memory=False)
+            logger.info("Loaded raw Affinity CSV", rows=len(df), columns=len(df.columns))
+
+            # Filter to high/mid connections only
+            loc_col = next((c for c in df.columns if "level of connection" in c.lower()), None)
+            if loc_col:
+                df = df[df[loc_col].astype(str).str.strip().str.lower().isin(["high", "mid"])]
+                df = df.drop(columns=[loc_col])
+
+            # Drop rows with no Last Contact date
+            if "Last Contact" in df.columns:
+                df = df[
+                    df["Last Contact"].astype(str).str.strip().ne("").ne("nan")
+                    & df["Last Contact"].notna()
+                ]
+
+            logger.info("After pre-filters", rows=len(df))
+
+            # Extract Website and LinkedIn URLs before dropping columns
+            links = {}
+            if "Website" in df.columns:
+                for _, row in df.iterrows():
+                    url = str(row["Website"]).strip()
+                    name = str(row["Name"]).strip()
+                    if url and name and url.startswith("http"):
+                        links[name] = url
+
+            linkedin = {}
+            li_col = next((c for c in df.columns if c == "LinkedIn URL"), None)
+            if li_col:
+                for _, row in df.iterrows():
+                    url = str(row[li_col]).strip()
+                    name = str(row["Name"]).strip()
+                    if url and name and url.startswith("http"):
+                        linkedin[name] = url
+
+            # Keep only display columns
+            display_columns = [
+                "Name", "Description", "Industry", "Location (Country)",
+                "Investment Stage", "Year Founded", "Number of Employees",
+                "Investors", "Last Funding Amount (USD)", "Last Funding Date",
+                "Total Funding Amount (USD)", "People", "Last Contact",
+            ]
+            keep, seen = [], set()
+            for col in df.columns:
+                if col in display_columns and col not in seen:
+                    keep.append(col)
+                    seen.add(col)
+
+            df = df[keep].copy().fillna("").astype(str).reset_index(drop=True)
+
+            # Build dropdown filter options
+            filters: dict = {"industries": [], "countries": [], "stages": []}
+            if "Industry" in df.columns:
+                all_industries: set = set()
+                for val in df["Industry"].unique():
+                    for part in str(val).split(";"):
+                        part = part.strip()
+                        if part:
+                            all_industries.add(part)
+                filters["industries"] = sorted(all_industries)
+            if "Location (Country)" in df.columns:
+                filters["countries"] = sorted(v for v in df["Location (Country)"].unique() if v.strip())
+            if "Investment Stage" in df.columns:
+                filters["stages"] = sorted(v for v in df["Investment Stage"].unique() if v.strip())
+
+            logger.info("Companies data ready", companies=len(df), links=len(links), linkedin=len(linkedin))
+            return df, links, linkedin, filters
+
+        except Exception as e:
+            logger.error("Error loading companies data from Drive", error=str(e))
+            raise
+
     def clear_cache(self):
         """Clear all cached sheet data."""
         if hasattr(self.get_fund_metrics, 'clear_cache'):
@@ -339,6 +450,8 @@ class SheetsService:
             self.get_experts_data.clear_cache()
         if hasattr(self.get_asks_data, 'clear_cache'):
             self.get_asks_data.clear_cache()
+        if hasattr(self.get_companies_data, 'clear_cache'):
+            self.get_companies_data.clear_cache()
         logger.info("Cleared sheets cache")
 
 

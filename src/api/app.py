@@ -331,7 +331,7 @@ def create_app() -> FastAPI:
         offset: int = 0,
     ):
         try:
-            return companies_service.search(q, industry, country, stage, limit, offset)
+            return await companies_service.search(q, industry, country, stage, limit, offset)
         except Exception as e:
             logger.error("Error in /api/companies", error=str(e), exc_info=True)
             raise HTTPException(status_code=500, detail="Error searching companies")

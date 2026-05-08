@@ -14,10 +14,10 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
 
-    # Telegram Configuration
-    telegram_bot_token: str = Field(..., description="Telegram bot token from @BotFather")
+    # Telegram Configuration (optional — not used by the web app)
+    telegram_bot_token: str = Field(default="", description="Telegram bot token from @BotFather")
     allowed_telegram_ids: List[int] = Field(
-        ..., description="List of authorized Telegram user IDs"
+        default=[], description="List of authorized Telegram user IDs"
     )
 
     # OpenAI Configuration
@@ -82,6 +82,9 @@ class Settings(BaseSettings):
 
     # Email Configuration (for deal submissions via Resend)
     resend_api_key: str = Field(default="", description="Resend API key for sending deal submission emails")
+
+    # Affinity Companies Data (Google Drive)
+    affinity_drive_folder_id: str = Field(default="", description="Google Drive folder ID containing Affinity CSV export")
 
     model_config = SettingsConfigDict(
         env_file=".env",

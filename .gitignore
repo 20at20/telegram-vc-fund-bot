@@ -56,3 +56,6 @@ htmlcov/
 
 # MCP
 mcp_data/
+
+# Data exports (contain sensitive CRM / fund data)
+*.csv
