@@ -1,5 +1,51 @@
 import PortfolioTicker from '../components/PortfolioTicker'
 
+const fundRows = [
+  {
+    label: 'INDUSTRY',
+    text: (
+      <>
+        We invest in exceptional founders using AI to transform{' '}
+        <strong>traditional industries</strong> like finance, healthcare, and enterprise software,
+        where <strong>up to 80% of workflows can be automated</strong>
+      </>
+    ),
+    badge: 'Application AI for Traditional Businesses',
+  },
+  {
+    label: 'GEO',
+    text: (
+      <>
+        The <strong>European opportunity is massive</strong>, with founders building world-class AI
+        companies like ElevenLabs, DeepMind, and Mistral AI
+      </>
+    ),
+    badge: '80% Europe+ · 20% US',
+  },
+  {
+    label: 'STAGE',
+    text: (
+      <>
+        We focus on early-stage investments, where{' '}
+        <strong>price-to-return potential is highest</strong>, and{' '}
+        <strong>most of the application-layer opportunities</strong> are emerging
+      </>
+    ),
+    badge: '50% Seed · 30% Pre-Seed · 20% Follow-ons',
+  },
+  {
+    label: 'TEAM',
+    text: (
+      <>
+        We back founders who <strong>execute quickly and iterate fast</strong>, have{' '}
+        <strong>deep insight into their market</strong>, and show the{' '}
+        <strong>ambition to build large, global companies</strong>
+      </>
+    ),
+    badge: 'Do-er · Market · Ambition',
+  },
+]
+
 interface Props {
   token: string
   onLogout: () => void
@@ -75,6 +121,44 @@ export default function FundDocsPage({ onLogout, onBack }: Props) {
 
       <div className="flex-1 overflow-y-auto px-4 py-8">
         <div className="max-w-xl mx-auto flex flex-col gap-8">
+
+          {/* Fund II overview table */}
+          <div className="flex flex-col gap-0 border border-gray-200 bg-white">
+            <div className="px-6 py-5 border-b border-gray-200">
+              <div style={{ fontFamily: "'Space Grotesk', sans-serif" }} className="flex items-baseline gap-3">
+                <span style={{ color: '#1400FF' }} className="text-3xl font-extrabold leading-none">€50M</span>
+                <span className="text-2xl font-extrabold text-gray-900">Fund II</span>
+              </div>
+            </div>
+            <div className="flex flex-col divide-y divide-gray-200">
+              {fundRows.map(row => (
+                <div key={row.label} className="flex items-stretch">
+                  <div
+                    className="flex items-center justify-center px-3 flex-shrink-0"
+                    style={{ backgroundColor: '#1400FF', writingMode: 'vertical-rl', textOrientation: 'mixed' }}
+                  >
+                    <span
+                      className="text-white text-xs font-black tracking-widest uppercase"
+                      style={{ transform: 'rotate(180deg)' }}
+                    >
+                      {row.label}
+                    </span>
+                  </div>
+                  <div className="flex-1 flex flex-col justify-center px-6 py-5">
+                    <p className="text-sm text-gray-700 leading-relaxed">{row.text}</p>
+                    <div className="mt-3">
+                      <span
+                        className="text-xs font-bold uppercase tracking-widest px-2 py-1"
+                        style={{ color: '#1400FF', backgroundColor: 'rgba(20,0,255,0.06)' }}
+                      >
+                        {row.badge}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
 
           {/* Decks */}
           <div className="flex flex-col gap-3">
