@@ -21,6 +21,7 @@ export default function DealsCarousel({ token, onLogout }: Props) {
   const [deals, setDeals] = useState<Deal[]>([])
   const [loading, setLoading] = useState(true)
   const [currentIndex, setCurrentIndex] = useState(0)
+  const [hovered, setHovered] = useState(false)
 
   useEffect(() => {
     const fetchDeals = async () => {
@@ -65,6 +66,14 @@ export default function DealsCarousel({ token, onLogout }: Props) {
     fetchDeals()
   }, [token, onLogout])
 
+  useEffect(() => {
+    if (deals.length < 2 || hovered) return
+    const id = setInterval(() => {
+      setCurrentIndex(i => (i + 1) % deals.length)
+    }, 10000)
+    return () => clearInterval(id)
+  }, [deals.length, hovered])
+
   const n = deals.length
 
   const circularDistance = (idx: number) => {
@@ -106,7 +115,11 @@ export default function DealsCarousel({ token, onLogout }: Props) {
   }
 
   return (
-    <div className="relative w-full max-w-2xl mx-auto">
+    <div
+      className="relative w-full max-w-2xl mx-auto"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
       <div className="relative h-64">
         {slots.map(({ idx, d, key }) => {
           const deal = deals[idx]
