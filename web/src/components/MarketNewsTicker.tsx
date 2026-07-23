@@ -23,6 +23,14 @@ function categoryColor(category: string): string {
   return CATEGORY_COLORS[category] || 'text-gray-500'
 }
 
+function isSafeUrl(url: string): boolean {
+  try {
+    return ['http:', 'https:'].includes(new URL(url).protocol)
+  } catch {
+    return false
+  }
+}
+
 export default function MarketNewsTicker({ token, onLogout }: Props) {
   const [items, setItems] = useState<NewsItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -60,7 +68,7 @@ export default function MarketNewsTicker({ token, onLogout }: Props) {
         <p className="text-xs text-gray-500 leading-snug line-clamp-2 mt-0.5">{item.description}</p>
       </>
     )
-    return item.link ? (
+    return item.link && isSafeUrl(item.link) ? (
       <a
         key={key}
         href={item.link}

@@ -8,7 +8,7 @@ import re
 from datetime import datetime, timezone
 from html import unescape
 from json import loads
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 
 import httpx
 from openai import AsyncOpenAI
@@ -101,7 +101,24 @@ async def _extract_top_items(text: str) -> list[dict]:
     items = parsed.get("items", [])
     if not isinstance(items, list):
         raise ValueError("OpenAI extraction did not return a list of items")
+
+    for item in items:
+        if isinstance(item, dict):
+            item["link"] = _sanitize_link(item.get("link", ""))
+
     return items[:_MAX_ITEMS]
+
+
+def _sanitize_link(link: str) -> str:
+    """Only ever pass through http(s) links — never cache a javascript: or
+    other unsafe-scheme URL that an LLM extraction pass might hallucinate
+    or copy verbatim from the source page."""
+    if not link:
+        return ""
+    try:
+        return link if urlparse(link).scheme in ("http", "https") else ""
+    except ValueError:
+        return ""
 
 
 async def refresh_market_news() -> None:
