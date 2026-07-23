@@ -1,4 +1,5 @@
 import PortfolioTicker from '../components/PortfolioTicker'
+import DealsCarousel from '../components/DealsCarousel'
 
 const sections = [
   {
@@ -96,11 +97,12 @@ const sections = [
 
 
 interface Props {
+  token: string
   onSelect: (agentId: string) => void
   onLogout: () => void
 }
 
-export default function AgentSelectPage({ onSelect, onLogout }: Props) {
+export default function AgentSelectPage({ token, onSelect, onLogout }: Props) {
   return (
     <div className="h-screen bg-white flex flex-col overflow-hidden">
       {/* Header */}
@@ -172,8 +174,9 @@ export default function AgentSelectPage({ onSelect, onLogout }: Props) {
           </div>
         </div>
 
-        {/* Right panel — placeholder for future content */}
+        {/* Right panel — deals carousel */}
         <div className="flex-1 overflow-y-auto bg-gray-50 flex items-center justify-center p-10">
+          <DealsCarousel token={token} onLogout={onLogout} />
         </div>
 
       </div>

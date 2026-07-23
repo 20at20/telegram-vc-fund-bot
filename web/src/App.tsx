@@ -46,7 +46,7 @@ export default function App() {
   }
 
   if (!token) return <LoginPage onLogin={handleLogin} />
-  if (!selectedAgent) return <AgentSelectPage onSelect={handleSelectAgent} onLogout={handleLogout} />
+  if (!selectedAgent) return <AgentSelectPage token={token} onSelect={handleSelectAgent} onLogout={handleLogout} />
 
   if (selectedAgent === 'fund-docs') {
     return <LPChatPage token={token} onLogout={handleLogout} onBack={handleBack} />
