@@ -74,6 +74,14 @@ export default function DealsCarousel({ token, onLogout }: Props) {
     return d
   }
 
+  const goPrev = () => setCurrentIndex(i => (i - 1 + n) % n)
+  const goNext = () => setCurrentIndex(i => (i + 1) % n)
+
+  const handleCenterClick = () => {
+    const link = deals[currentIndex]?.link
+    if (link) window.open(link, '_blank', 'noopener,noreferrer')
+  }
+
   if (loading || n === 0) return null
 
   // Which deals are visible this render, and at what offset from center (d).
@@ -106,6 +114,7 @@ export default function DealsCarousel({ token, onLogout }: Props) {
           return (
             <div
               key={key}
+              onClick={isCenter ? handleCenterClick : () => setCurrentIndex(idx)}
               style={{
                 transform: `translate(calc(-50% + ${d * CARD_SPACING}px), -50%) scale(${isCenter ? 1 : 0.85})`,
                 opacity: isCenter ? 1 : 0.5,
@@ -114,6 +123,9 @@ export default function DealsCarousel({ token, onLogout }: Props) {
               className={`
                 absolute top-1/2 left-1/2 w-64 border-2 border-gray-200 bg-white p-5
                 transition-all duration-500 ease-out
+                ${isCenter
+                  ? deal.link ? 'cursor-pointer hover:border-[#1400FF]' : 'cursor-default'
+                  : 'cursor-pointer'}
               `}
             >
               <div className="flex flex-wrap gap-2 mb-3">
@@ -143,6 +155,29 @@ export default function DealsCarousel({ token, onLogout }: Props) {
           )
         })}
       </div>
+
+      {n > 1 && (
+        <div className="flex items-center justify-center gap-8 mt-4">
+          <button
+            onClick={goPrev}
+            aria-label="Previous deal"
+            className="text-gray-400 hover:text-[#1400FF] transition-colors"
+          >
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <button
+            onClick={goNext}
+            aria-label="Next deal"
+            className="text-gray-400 hover:text-[#1400FF] transition-colors"
+          >
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        </div>
+      )}
     </div>
   )
 }
