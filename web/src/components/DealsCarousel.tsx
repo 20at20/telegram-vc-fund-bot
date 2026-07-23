@@ -15,6 +15,8 @@ interface Deal {
   link: string
 }
 
+const CARD_SPACING = 240 // px offset for side slots relative to center
+
 export default function DealsCarousel({ token, onLogout }: Props) {
   const [deals, setDeals] = useState<Deal[]>([])
   const [loading, setLoading] = useState(true)
@@ -65,12 +67,82 @@ export default function DealsCarousel({ token, onLogout }: Props) {
 
   const n = deals.length
 
+  const circularDistance = (idx: number) => {
+    let d = idx - currentIndex
+    if (d > n / 2) d -= n
+    if (d < -n / 2) d += n
+    return d
+  }
+
   if (loading || n === 0) return null
 
-  // Temporary plain render — replaced with the real 3-slot carousel in Task 2.
+  // Which deals are visible this render, and at what offset from center (d).
+  // n === 2 is special-cased: both side slots show the single "other" deal
+  // (there's no well-defined left vs. right for a 2-item circular list).
+  type Slot = { idx: number; d: number; key: string }
+  const slots: Slot[] = []
+  if (n === 1) {
+    slots.push({ idx: 0, d: 0, key: 'center' })
+  } else if (n === 2) {
+    const otherIdx = (currentIndex + 1) % 2
+    slots.push({ idx: otherIdx, d: -1, key: 'left' })
+    slots.push({ idx: currentIndex, d: 0, key: 'center' })
+    slots.push({ idx: otherIdx, d: 1, key: 'right' })
+  } else {
+    for (let idx = 0; idx < n; idx++) {
+      const d = circularDistance(idx)
+      if (Math.abs(d) <= 1) {
+        slots.push({ idx, d, key: `slot-${idx}` })
+      }
+    }
+  }
+
   return (
-    <div>
-      <p>{deals[currentIndex]?.company}</p>
+    <div className="relative w-full max-w-2xl mx-auto">
+      <div className="relative h-64">
+        {slots.map(({ idx, d, key }) => {
+          const deal = deals[idx]
+          const isCenter = d === 0
+          return (
+            <div
+              key={key}
+              style={{
+                transform: `translate(calc(-50% + ${d * CARD_SPACING}px), -50%) scale(${isCenter ? 1 : 0.85})`,
+                opacity: isCenter ? 1 : 0.5,
+                zIndex: isCenter ? 20 : 10,
+              }}
+              className={`
+                absolute top-1/2 left-1/2 w-64 border-2 border-gray-200 bg-white p-5
+                transition-all duration-500 ease-out
+              `}
+            >
+              <div className="flex flex-wrap gap-2 mb-3">
+                {deal.industry && (
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-[#1400FF]">
+                    {deal.industry}
+                  </span>
+                )}
+                {deal.round && (
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                    {deal.round}
+                  </span>
+                )}
+              </div>
+              <div
+                style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+                className="font-black text-lg text-gray-900 mb-2"
+              >
+                {deal.company}
+              </div>
+              {deal.description && (
+                <p className="text-xs text-gray-500 leading-snug line-clamp-3">
+                  {deal.description}
+                </p>
+              )}
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }
