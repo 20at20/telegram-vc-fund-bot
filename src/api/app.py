@@ -11,6 +11,7 @@ from typing import List, Dict, Any, Optional, AsyncIterator
 
 import httpx
 import pandas as pd
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import FastAPI, HTTPException, Depends, Form, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
@@ -26,6 +27,7 @@ from src.services.response_generator import response_generator
 from src.services.pdf_service import pdf_service
 from src.services.obsidian_service import obsidian_service
 from src.services.openai_service import openai_service
+from src.services.market_news_service import refresh_market_news, get_cached_market_news
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -210,7 +212,27 @@ async def lifespan(app: FastAPI):
     loop = asyncio.get_event_loop()
     loop.run_in_executor(None, pdf_service.get_deck_context)
     loop.run_in_executor(None, obsidian_service.get_document_context)
+
+    # Market news: refresh once now (so the cache isn't empty on a fresh deploy),
+    # then weekly on the scheduler.
+    asyncio.create_task(refresh_market_news())
+    scheduler = AsyncIOScheduler(timezone="UTC")
+    scheduler.add_job(
+        refresh_market_news,
+        trigger="cron",
+        day_of_week="mon",
+        hour=7,
+        minute=0,
+        id="weekly_market_news_refresh",
+        replace_existing=True,
+    )
+    scheduler.start()
+    logger.info("Market news scheduler started")
+
     yield
+
+    scheduler.shutdown(wait=False)
+    logger.info("Market news scheduler stopped")
 
 
 def create_app() -> FastAPI:
@@ -294,6 +316,10 @@ def create_app() -> FastAPI:
         except Exception as e:
             logger.error("Error in /api/deals", error=str(e), exc_info=True)
             raise HTTPException(status_code=500, detail="Error fetching deals data")
+
+    @app.get("/api/market-news")
+    async def market_news(_token: str = Depends(verify_token)):
+        return get_cached_market_news()
 
     @app.get("/api/experts")
     async def experts(_token: str = Depends(verify_token)):

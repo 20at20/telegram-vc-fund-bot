@@ -40,6 +40,7 @@ python-multipart==0.0.9
 # Utilities
 tenacity==8.2.3
 httpx~=0.25.0
+apscheduler==3.10.4
 
 # Development & Testing
 pytest~=7.4.0

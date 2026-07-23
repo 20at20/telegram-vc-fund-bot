@@ -1,5 +1,6 @@
 import PortfolioTicker from '../components/PortfolioTicker'
 import DealsCarousel from '../components/DealsCarousel'
+import MarketNewsTicker from '../components/MarketNewsTicker'
 
 const sections = [
   {
@@ -182,7 +183,15 @@ export default function AgentSelectPage({ token, onSelect, onLogout }: Props) {
             </h2>
             <DealsCarousel token={token} onLogout={onLogout} />
           </div>
-          <div className="h-1/2 overflow-y-auto bg-gray-50 border-t border-gray-100" />
+          <div className="h-1/2 overflow-hidden bg-gray-50 border-t border-gray-100 flex flex-col p-6">
+            <div className="flex-shrink-0 mb-3">
+              <h2 className="font-black uppercase tracking-widest text-sm text-gray-900">Market News</h2>
+              <p className="text-xs text-gray-400 mt-0.5">This week in European Tech</p>
+            </div>
+            <div className="flex-1 min-h-0">
+              <MarketNewsTicker token={token} onLogout={onLogout} />
+            </div>
+          </div>
         </div>
 
       </div>
