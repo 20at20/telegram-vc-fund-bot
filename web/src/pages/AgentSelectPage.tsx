@@ -174,9 +174,15 @@ export default function AgentSelectPage({ token, onSelect, onLogout }: Props) {
           </div>
         </div>
 
-        {/* Right panel — deals carousel */}
-        <div className="flex-1 overflow-y-auto bg-gray-50 flex items-center justify-center p-10">
-          <DealsCarousel token={token} onLogout={onLogout} />
+        {/* Right panel — deals carousel (top) + placeholder (bottom) */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="h-1/2 overflow-y-auto bg-gray-50 flex flex-col items-center justify-center p-6">
+            <h2 className="font-black uppercase tracking-widest text-sm text-gray-900 self-start mb-4">
+              Deals on the Table
+            </h2>
+            <DealsCarousel token={token} onLogout={onLogout} />
+          </div>
+          <div className="h-1/2 overflow-y-auto bg-gray-50 border-t border-gray-100" />
         </div>
 
       </div>

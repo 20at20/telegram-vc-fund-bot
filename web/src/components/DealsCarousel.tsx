@@ -13,9 +13,22 @@ interface Deal {
   round: string
   description: string
   link: string
+  hq: string
 }
 
 const CARD_SPACING = 240 // px offset for side slots relative to center
+const AUTO_SCROLL_MS = 3000
+
+// The HQ column uses 2-letter codes that aren't always real ISO 3166-1
+// alpha-2 codes (e.g. "UK" instead of "GB") — override those here.
+const COUNTRY_CODE_OVERRIDES: Record<string, string> = { UK: 'GB' }
+
+function countryCodeToFlag(code: string): string {
+  const normalized = COUNTRY_CODE_OVERRIDES[code] || code
+  if (!/^[A-Z]{2}$/.test(normalized)) return ''
+  const codePoints = [...normalized].map(c => 0x1f1e6 + (c.charCodeAt(0) - 65))
+  return String.fromCodePoint(...codePoints)
+}
 
 export default function DealsCarousel({ token, onLogout }: Props) {
   const [deals, setDeals] = useState<Deal[]>([])
@@ -42,6 +55,7 @@ export default function DealsCarousel({ token, onLogout }: Props) {
         const industryCol = columns.find(c => c.toLowerCase().includes('industry')) || ''
         const roundCol = columns.find(c => c.toLowerCase().includes('round') && !c.toLowerCase().includes('size')) || ''
         const descCol = columns.find(c => c.toLowerCase().includes('descri')) || ''
+        const hqCol = columns.find(c => c.toLowerCase().includes('hq')) || columns.find(c => c.toLowerCase().includes('geo')) || ''
 
         const parsed: Deal[] = rows
           .map(row => {
@@ -52,6 +66,7 @@ export default function DealsCarousel({ token, onLogout }: Props) {
               round: (row[roundCol] || '').trim(),
               description: (row[descCol] || '').trim(),
               link: links[company] || '',
+              hq: (row[hqCol] || '').trim().toUpperCase(),
             }
           })
           .filter(d => d.company)
@@ -70,7 +85,7 @@ export default function DealsCarousel({ token, onLogout }: Props) {
     if (deals.length < 2 || hovered) return
     const id = setInterval(() => {
       setCurrentIndex(i => (i + 1) % deals.length)
-    }, 10000)
+    }, AUTO_SCROLL_MS)
     return () => clearInterval(id)
   }, [deals.length, hovered])
 
@@ -124,6 +139,7 @@ export default function DealsCarousel({ token, onLogout }: Props) {
         {slots.map(({ idx, d, key }) => {
           const deal = deals[idx]
           const isCenter = d === 0
+          const flag = countryCodeToFlag(deal.hq)
           return (
             <div
               key={key}
@@ -141,15 +157,22 @@ export default function DealsCarousel({ token, onLogout }: Props) {
                   : 'cursor-pointer'}
               `}
             >
-              <div className="flex flex-wrap gap-2 mb-3">
-                {deal.industry && (
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-[#1400FF]">
-                    {deal.industry}
-                  </span>
-                )}
-                {deal.round && (
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                    {deal.round}
+              <div className="flex items-start justify-between gap-2 mb-3">
+                <div className="flex flex-wrap gap-2">
+                  {deal.industry && (
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-[#1400FF]">
+                      {deal.industry}
+                    </span>
+                  )}
+                  {deal.round && (
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                      {deal.round}
+                    </span>
+                  )}
+                </div>
+                {flag && (
+                  <span className="text-lg leading-none flex-shrink-0" title={deal.hq}>
+                    {flag}
                   </span>
                 )}
               </div>
